@@ -1,13 +1,17 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import './App.css';
-
 import {ARCADE_ROOM} from './Rooms';
 import Editor from "@monaco-editor/react";
+import { registerLanguages } from './TextMate';
+
+type Monaco = typeof monaco;
 
 function App() {
-  const editorRef = useRef(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-  function handleSourceEditorDidMount(editor: any, monaco: any) {
+  function handleSourceEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
+    registerLanguages(monaco);
     editor.updateOptions({
       minimap: {
         enabled: false
