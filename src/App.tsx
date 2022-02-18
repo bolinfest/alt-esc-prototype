@@ -1,17 +1,36 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import loader from '@monaco-editor/loader';
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import './App.css';
 import {ARCADE_ROOM} from './Rooms';
 import Editor from "@monaco-editor/react";
-import { registerLanguages } from './TextMate';
+import { registerLanguagesForMonaco } from './TextMate';
 
 type Monaco = typeof monaco;
 
-function App() {
+// Must load monaco-editor-core instead of monaco-editor because
+// monaco-editor comes with its own set of languages that interfere
+// with the versions we want to load that are configured with TextMate grammars.
+loader.config({
+  paths: {
+    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor-core@0.30.1/min/vs'
+  }
+});
+
+export default function App() {
+  const [monacoLibrary, setMonacoLibrary] = useState<Monaco | null>(null);
+  if (monacoLibrary != null) {
+    return <RealApp />;
+  } else {
+    loader.init().then(monaco => { registerLanguagesForMonaco(monaco).then(() => setMonacoLibrary(monaco)) });
+    return <div>Loading monaco...</div>;
+  }
+}
+
+function RealApp() {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   function handleSourceEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
-    registerLanguages(monaco);
     editor.updateOptions({
       minimap: {
         enabled: false
@@ -27,7 +46,7 @@ function App() {
           height="90vh"
           width="50%"
           theme="vs-dark"
-          defaultLanguage="javascript"
+          defaultLanguage="python"
           defaultValue={ARCADE_ROOM}
           onMount={handleSourceEditorDidMount}
         />
@@ -42,5 +61,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
