@@ -6,7 +6,7 @@ export const ARCADE_ROOM = `\
 # blocks in the file so that state can be declared
 # near the code that uses it.
 state {
-
+  light-switch-on = true
 }
 
 event enter() {
