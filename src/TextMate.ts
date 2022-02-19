@@ -12,10 +12,10 @@ import {
   loadWASM,
 } from "vscode-oniguruma";
 
-import PythonConfiguration from "./python-configuration";
-import PythonGrammar from "./python-grammar";
-import * as gdscript_grammar from "./languages/GDScript.tmLanguage.json";
-import * as gdscript_configuration from "./languages/gdscript-configuration.json";
+import PythonConfiguration from "./languages/python-configuration";
+import PythonGrammar from "./languages/python-grammar";
+import * as GDScriptGrammar from "./languages/GDScript.tmLanguage.json";
+import * as GDScriptConfiguration from "./languages/gdscript-configuration.json";
 import { rehydrateRegexps } from "./configuration";
 import { LanguageId } from "./register";
 
@@ -44,25 +44,8 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
     },
     {
       id: "python",
-      extensions: [
-        ".py",
-        ".rpy",
-        ".pyw",
-        ".cpy",
-        ".gyp",
-        ".gypi",
-        ".pyi",
-        ".ipy",
-        ".bzl",
-        ".cconf",
-        ".cinc",
-        ".mcconf",
-        ".sky",
-        ".td",
-        ".tw",
-      ],
+      extensions: [".py"],
       aliases: ["Python", "py"],
-      filenames: ["Snakefile", "BUILD", "BUCK", "TARGETS"],
       firstLine: "^#!\\s*/?.*\\bpython[0-9.-]*\\b",
     },
   ];
@@ -82,7 +65,7 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
       case "source.gdscript":
         return Promise.resolve({
           type: "json",
-          grammar: JSON.stringify(gdscript_grammar),
+          grammar: JSON.stringify(GDScriptGrammar),
         });
       case "source.python":
         return Promise.resolve({
@@ -98,7 +81,7 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
     switch (language) {
       case "gdscript":
         return Promise.resolve(
-          rehydrateRegexps(JSON.stringify(gdscript_configuration))
+          rehydrateRegexps(JSON.stringify(GDScriptConfiguration))
         );
       case "python":
         return Promise.resolve(
