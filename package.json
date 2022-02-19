@@ -1,6 +1,7 @@
 {
   "name": "alt-esc-prototype",
   "version": "0.1.0",
+  "homepage": "https://bolinfest.github.io/alt-esc-prototype",
   "private": true,
   "dependencies": {
     "@monaco-editor/react": "^4.3.1",
