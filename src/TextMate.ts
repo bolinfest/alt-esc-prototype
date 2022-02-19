@@ -14,6 +14,8 @@ import {
 
 import PythonConfiguration from "./python-configuration";
 import PythonGrammar from "./python-grammar";
+import * as gdscript_grammar from "./languages/GDScript.tmLanguage.json";
+import * as gdscript_configuration from "./languages/gdscript-configuration.json";
 import { rehydrateRegexps } from "./configuration";
 import { LanguageId } from "./register";
 
@@ -35,6 +37,11 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
   });
 
   const languages: monaco.languages.ILanguageExtensionPoint[] = [
+    {
+      id: "gdscript",
+      aliases: ["GDScript", "gdscript"],
+      extensions: [".gd"],
+    },
     {
       id: "python",
       extensions: [
@@ -60,19 +67,47 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
     },
   ];
   const grammars: { [scopeName: string]: DemoScopeNameInfo } = {
+    "source.gdscript": {
+      language: "gdscript",
+      path: "GDScript.tmLanguage.json",
+    },
     "source.python": {
       language: "python",
       path: "MagicPython.tmLanguage.json",
     },
   };
 
-  const fetchGrammar = (_scopeName: string): Promise<TextMateGrammar> =>
-    Promise.resolve({
-      type: "json",
-      grammar: JSON.stringify(PythonGrammar),
-    });
-  const fetchConfiguration = (_language: LanguageId) =>
-    Promise.resolve(rehydrateRegexps(JSON.stringify(PythonConfiguration)));
+  function fetchGrammar(scopeName: string): Promise<TextMateGrammar> {
+    switch (scopeName) {
+      case "source.gdscript":
+        return Promise.resolve({
+          type: "json",
+          grammar: JSON.stringify(gdscript_grammar),
+        });
+      case "source.python":
+        return Promise.resolve({
+          type: "json",
+          grammar: JSON.stringify(PythonGrammar),
+        });
+      default:
+        return Promise.reject(`No grammar found for ${scopeName}`);
+    }
+  }
+
+  function fetchConfiguration(language: LanguageId) {
+    switch (language) {
+      case "gdscript":
+        return Promise.resolve(
+          rehydrateRegexps(JSON.stringify(gdscript_configuration))
+        );
+      case "python":
+        return Promise.resolve(
+          rehydrateRegexps(JSON.stringify(PythonConfiguration))
+        );
+      default:
+        return Promise.reject(`No configuration found for ${language}`);
+    }
+  }
 
   const provider = new SimpleLanguageInfoProvider({
     grammars,

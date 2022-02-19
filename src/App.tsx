@@ -54,7 +54,7 @@ function RealApp() {
           height="90vh"
           width="50%"
           theme="vs-dark"
-          defaultLanguage="python"
+          defaultLanguage="gdscript"
           defaultValue="# output appears here"
         />
       </header>
