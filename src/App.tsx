@@ -43,17 +43,6 @@ function RealApp() {
       }
     });
     sourceEditorRef.current = editor;
-
-    const model = editor.getModel();
-    if (model != null) {
-      model.onDidChangeContent(_event => {
-        var gdscript = parseRoomScriptSource(model.getValue(), 'Arcade.room');
-        const {current: outputEditor} = outputEditorRef;
-        outputEditor?.getModel()?.setValue(gdscript);
-      });
-    } else {
-      throw Error('invariant failed: model not set');
-    }
   }
 
   function handleOutputEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
@@ -63,6 +52,20 @@ function RealApp() {
       }
     });
     outputEditorRef.current = editor;
+
+    const model = sourceEditorRef.current?.getModel();
+    if (model != null) {
+      const onDidChangeContent = () => {
+        var gdscript = parseRoomScriptSource(model.getValue(), 'Arcade.room');
+        editor.getModel()?.setValue(gdscript);
+      };
+      model.onDidChangeContent(onDidChangeContent);
+
+      // Invoke explicitly on initial load.
+      onDidChangeContent();
+    } else {
+      throw Error('invariant failed: model not set');
+    }
   }
 
   return (
