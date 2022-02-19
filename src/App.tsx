@@ -28,7 +28,8 @@ export default function App() {
 }
 
 function RealApp() {
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const sourceEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const outputEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   function handleSourceEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
     editor.updateOptions({
@@ -36,7 +37,16 @@ function RealApp() {
         enabled: false
       }
     });
-    editorRef.current = editor;
+    sourceEditorRef.current = editor;
+  }
+
+  function handleOutputEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
+    editor.updateOptions({
+      minimap: {
+        enabled: false
+      }
+    });
+    outputEditorRef.current = editor;
   }
 
   return (
@@ -56,6 +66,7 @@ function RealApp() {
           theme="vs-dark"
           defaultLanguage="gdscript"
           defaultValue="# output appears here"
+          onMount={handleOutputEditorDidMount}
         />
       </header>
     </div>
