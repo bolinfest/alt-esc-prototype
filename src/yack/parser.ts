@@ -1,17 +1,34 @@
+import type {Choice} from './dialog';
+
+import {tryConsumeStringLiteral} from './string';
+import {tryParseDivert} from './divert';
+import {tryParseChoice} from './dialog';
+
+const INDENT = '    '
+
 const includeComments = true;
 
 type RootContext = {
     type: "root"
 }
 
-type Context = RootContext;
+type DialogMenu = {
+    type: "dialog_menu",
+    choices: Choice[],
+}
+
+type Context = RootContext | DialogMenu;
 
 export function parseYackFile(src: string, filename: string): string {
     const knots: Knot[] = [];
     const stack: Context[] = [{type: "root" }];
     let currentKnot = null;
 
-    for (const [_lineNumber, line] of src.split("\n").entries()) {
+    const lines = src.split("\n");
+    let index = 0;
+    let maxIndex = lines.length;
+    while (index < maxIndex) {
+        const line = lines[index++];
         if (isComment(line)) {
             if (includeComments && currentKnot != null) {
                 const gd = line.replace(/^\s*\/\//, "#");
@@ -51,6 +68,32 @@ export function parseYackFile(src: string, filename: string): string {
                     currentKnot.addCode(`    return ${quote(divert.knot)}`);
                     break;
                 }
+
+                const choice = tryParseChoice(line);
+                if (choice != null) {
+                    const context: DialogMenu = {
+                        type: 'dialog_menu',
+                        choices: [choice],
+                    };
+                    stack.push(context);
+                    break;
+                }
+
+                break;
+            }
+            case "dialog_menu": {
+                // Note that blank lines and comments have already been filtered out
+                // by this point.
+                const choice = tryParseChoice(line);
+                if (choice != null) {
+                    currentContext.choices.push(choice);
+                } else {
+                    // Mark the existing menu "done" and re-parse this line in the new
+                    // context.
+                    stack.pop();
+                    currentKnot?.addDialogMenu(currentContext, stack.length);
+                    --index;
+                }
                 break;
             }
         }
@@ -62,12 +105,17 @@ export function parseYackFile(src: string, filename: string): string {
 class Knot {
     private lines: string[] = [];
     private nextKnot: string | null = null;
+    private nextVarID = 0;
 
     constructor(private name: string) {
     }
 
     getName(): string {
         return this.name;
+    }
+
+    private getNextVar(): string {
+        return '__genvar_' + (++this.nextVarID);
     }
 
     setNextKnot(name: string) {
@@ -78,10 +126,19 @@ class Knot {
         this.lines.push(line);
     }
 
+    addDialogMenu(menu: DialogMenu, depth: number): void {
+        const varName = this.getNextVar();
+        const indent = INDENT.repeat(depth);
+        const choices = menu.choices.map(choice => {
+            const divert = choice.divert != null ? quote(choice.divert) : 'null';
+            return `${indent}${INDENT}Choice(${quote(choice.line)}, ${divert}, ${JSON.stringify(choice.conditions)}),\n`;
+        })
+        this.lines.push(`${indent}var ${varName} = yield menu([\n${choices.join("")}${indent}])\n${indent}if ${varName} != null: return ${varName}`)
+    }
+
     private static endsWithReturnStatement(body: string): boolean {
         const index = body.lastIndexOf('\n');
         const lastLine = index !== -1 ? body.substring(index + 1) : body;
-        console.log(lastLine)
         const match = lastLine.match(/^\s+return\s(.*)$/);
         if (match == null) {
             return false;
@@ -130,33 +187,6 @@ function tryParseDialogLine(line: string): {actor: string, line: string} | null 
     } else {
         return null;
     }
-}
-
-function tryParseDivert(line: string): {knot: string} | null {
-    const match = line.match(/^\s*-> ([a-zA-Z][a-zA-Z0-9_]+)\b/);
-    return match != null ? {knot: match[1]} : null;
-}
-
-function tryConsumeStringLiteral(s: string): {value: string; length: number} | null {
-    if (s.charAt(0) !== '"') {
-        return null;
-    }
-
-    let isEscape = false;
-    for (let index = 1, len = s.length; index < len; ++index) {
-        const c = s.charAt(index);
-        if (isEscape) {
-            isEscape = false;
-        } else if (c === '"') {
-            const length = index + 1;
-            const value = JSON.parse(s.slice(0, length));
-            return {value, length};
-        } else if (c === '\\') {
-            isEscape = true;
-        }
-    }
-
-    return null;
 }
 
 function isComment(line: string): boolean {
