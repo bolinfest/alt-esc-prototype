@@ -3,9 +3,13 @@ import loader from '@monaco-editor/loader';
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import './App.css';
 import {ARCADE_ROOM} from './Rooms';
+import {KITCHEN_SINK} from './Yacks';
 import Editor from "@monaco-editor/react";
 import { registerLanguagesForMonaco } from './TextMate';
 import { parseRoomScriptSource } from './parser/parser';
+import { parseYackFile } from './yack/parser';
+
+const useYackParser = true;
 
 type Monaco = typeof monaco;
 
@@ -56,7 +60,8 @@ function RealApp() {
     const model = sourceEditorRef.current?.getModel();
     if (model != null) {
       const onDidChangeContent = () => {
-        var gdscript = parseRoomScriptSource(model.getValue(), 'Arcade.room');
+        const parseFn = useYackParser ? parseYackFile : parseRoomScriptSource;
+        const gdscript = parseFn(model.getValue(), 'Arcade.room');
         editor.getModel()?.setValue(gdscript);
       };
       model.onDidChangeContent(onDidChangeContent);
@@ -76,7 +81,7 @@ function RealApp() {
           width="50%"
           theme="vs-dark"
           defaultLanguage="python"
-          defaultValue={ARCADE_ROOM}
+          defaultValue={useYackParser ? KITCHEN_SINK : ARCADE_ROOM}
           onMount={handleSourceEditorDidMount}
         />
         <Editor
