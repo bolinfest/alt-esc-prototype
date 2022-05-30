@@ -3,6 +3,7 @@ import type {Choice} from './dialog';
 import {tryConsumeStringLiteral} from './string';
 import {tryParseDivert} from './divert';
 import {tryParseChoice} from './dialog';
+import {tokenize} from './tokenizer';
 
 const INDENT = '    '
 
@@ -20,6 +21,11 @@ type DialogMenu = {
 type Context = RootContext | DialogMenu;
 
 export function parseYackFile(src: string, filename: string): string {
+    const tokens = tokenize(src);
+    return JSON.stringify(tokens, null, 2);
+}
+
+function oldParseYackFile(src: string, filename: string): string {
     const knots: Knot[] = [];
     const stack: Context[] = [{type: "root" }];
     let currentKnot = null;
@@ -69,12 +75,13 @@ export function parseYackFile(src: string, filename: string): string {
                     break;
                 }
 
-                const choice = tryParseChoice(line);
-                if (choice != null) {
+                const parsedChoice = tryParseChoice(line, lines, index);
+                if (parsedChoice != null) {
                     const context: DialogMenu = {
                         type: 'dialog_menu',
-                        choices: [choice],
+                        choices: [parsedChoice.choice],
                     };
+                    index += parsedChoice.numLinesConsumed - 1;
                     stack.push(context);
                     break;
                 }
@@ -84,9 +91,10 @@ export function parseYackFile(src: string, filename: string): string {
             case "dialog_menu": {
                 // Note that blank lines and comments have already been filtered out
                 // by this point.
-                const choice = tryParseChoice(line);
-                if (choice != null) {
-                    currentContext.choices.push(choice);
+                const parsedChoice = tryParseChoice(line, lines, index);
+                if (parsedChoice != null) {
+                    currentContext.choices.push(parsedChoice.choice);
+                    index += parsedChoice.numLinesConsumed - 1;
                 } else {
                     // Mark the existing menu "done" and re-parse this line in the new
                     // context.
@@ -130,10 +138,11 @@ class Knot {
         const varName = this.getNextVar();
         const indent = INDENT.repeat(depth);
         const choices = menu.choices.map(choice => {
-            const divert = choice.divert != null ? quote(choice.divert) : 'null';
-            return `${indent}${INDENT}Choice(${quote(choice.line)}, ${divert}, ${JSON.stringify(choice.conditions)}),\n`;
-        })
-        this.lines.push(`${indent}var ${varName} = yield menu([\n${choices.join("")}${indent}])\n${indent}if ${varName} != null: return ${varName}`)
+            // const divert = choice.divert != null ? quote(choice.divert) : 'null';
+            // return `${indent}${INDENT}Choice(${quote(choice.line)}, ${divert}, ${JSON.stringify(choice.conditions)}),\n`;
+            return 'TODO';
+        });
+        this.lines.push(`${indent}var ${varName} = yield menu([\n${choices.join("")}${indent}])\n${indent}if ${varName} != null: return ${varName}`);
     }
 
     private static endsWithReturnStatement(body: string): boolean {

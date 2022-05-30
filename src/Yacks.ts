@@ -8,10 +8,10 @@ export const KITCHEN_SINK = `\
 
 susie: "What would you like for lunch?"
 
-1 "Peanut butter and jelly." [once] -> pbj
-2 "Tuna fish." [once] -> tuna
-3 "A quesadilla." [once] -> quesadilla
-4 "Pizza!" [once] -> pizza
+* "Peanut butter and jelly." [once] -> pbj
+* "Tuna fish." [once] -> tuna
+* "A quesadilla." [once] -> quesadilla
+* "Pizza!" [once] -> pizza
 
 -> out_of_options
 
@@ -44,4 +44,16 @@ susie: "."
 clara: "Well, what do you have?"
 susie: "Beets."
 
+-> exit
+
+=== delores_dev ===
+
+* if [!inInventory(Inventory.camera)]
+    "Where did you say the camera was again?" -> where_is_camera
+  elif [Note.isDone()]
+    "I think I'm done with the assignment." -> assignment_done
+  else
+    "Can I get some more film?" -> film
+  endif
+* "Want to see my work so far?" [temponce] [!Note.isDone() && !YACK(natalie_seen_work)]
 `;
