@@ -1,9 +1,11 @@
+import type {ChoiceToken, ControlFlowToken, Token} from './tokenizer';
 import type {Choice} from './dialog';
 
 import {tryConsumeStringLiteral} from './string';
 import {tryParseDivert} from './divert';
 import {tryParseChoice} from './dialog';
 import {tokenize} from './tokenizer';
+import { assert } from 'console';
 
 const INDENT = '    '
 
@@ -22,8 +24,171 @@ type Context = RootContext | DialogMenu;
 
 export function parseYackFile(src: string, filename: string): string {
     const tokens = tokenize(src);
-    return JSON.stringify(tokens, null, 2);
+    console.log(JSON.stringify(tokens, null, 2));
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+    return JSON.stringify(ast, null, 2);
 }
+
+class Parser {
+    private index = 0;
+    private currentToken: Token | null;
+    private knots: KnotNode[] = [{type: 'knot', name: '', children: []}];
+
+    constructor(private tokens: Token[]) {
+        this.currentToken = tokens[this.index] ?? null;
+    }
+
+    private peek(): Token | null {
+        return this.tokens[this.index + 1] ?? null;
+    }
+
+    private nextToken(): Token | null {
+        this.currentToken = this.tokens[++this.index] ?? null;
+        return this.currentToken;
+    }
+
+    private currentKnot(): KnotNode {
+        return this.knots[this.knots.length - 1];
+    }
+
+    parse(): KnotNode[] {
+        while (this.currentToken != null) {
+            switch (this.currentToken.type) {
+                case 'knot': {
+                    const knot: KnotNode = {
+                        type: 'knot',
+                        name: this.currentToken.name,
+                        children: [],
+                    };
+                    this.knots.push(knot);
+                    break;
+                }
+                case 'divert': {
+                    this.currentKnot().children.push({
+                        type: 'divert',
+                        target: this.currentToken.target,
+                    });
+                    break;
+                }
+                case 'actor_line': {
+                    const nextToken = this.peek();
+                    if (nextToken?.type === "string") {
+                        this.currentKnot().children.push({
+                            type: 'actor_line',
+                            actor: this.currentToken.actor,
+                            line: nextToken.value,
+                        });
+                    }
+                    break;
+                }
+                case 'choice': {
+                    const choiceExpr = this.parseChoiceExpr(this.currentToken);
+                    if (choiceExpr != null) {
+                        this.currentKnot().children.push(choiceExpr);
+                    }
+                    break;
+                }
+                // Error on unexpected tokens?
+            }
+            this.nextToken();
+        }
+
+        return this.knots;
+    }
+
+    private parseChoiceExpr(choiceToken: ChoiceToken): SimpleChoice | null {
+        const nextToken = this.nextToken();
+        if (nextToken == null) {
+            throw this.parseError('expected some token following `*` for choice', choiceToken);
+        }
+
+        switch (nextToken.type) {
+            case 'string': {
+                const line = nextToken.value;
+
+                // Consume optional conditions and diverts.
+                // Should stop consuming tokens once the line number changes?
+                const conditions: string[] = [];
+                while (true) {
+                    if (this.peek()?.type === 'condition') {
+                        const conditionToken = this.nextToken();
+                        if (conditionToken?.type === 'condition') {
+                           conditions.push(conditionToken.expr);
+                        } else {
+                            throw new Error('invariant violation');
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                let divert = null;
+                if (this.peek()?.type === 'divert') {
+                    const divertToken = this.nextToken();
+                    if (divertToken?.type === 'divert') {
+                        divert = divertToken.target;
+                    } else {
+                        throw new Error('invariant violation');
+                    }
+                }
+
+                return {
+                    type: 'simple_choice',
+                    line,
+                    conditions,
+                    divert,
+                };
+            }
+            case 'control_flow': {
+                if (nextToken.keyword !== 'if') {
+                    throw this.parseError('control flow expr must start with `if`', nextToken);
+                }
+                return this.parseIfExpr(nextToken);
+            }
+            default:
+                throw this.parseError(`did not expect token of type \`${nextToken.type}\` following \`*\``, nextToken);
+        }
+    }
+
+    private parseIfExpr(ifToken: ControlFlowToken) {
+        // parse conditional
+        // parse control flow body
+        // should return when encounter elif, else, or endif?
+        // upon endif, return?
+        return null;
+    }
+
+    private parseError(message: string, position: {line: number; column: number}): Error {
+        return new Error(`parse error on line ${position.line + 1}: ${message}`);
+    }
+}
+
+type KnotNode = {
+    type: 'knot';
+    name: string;
+    children: AstNode[];
+}
+
+type DivertNode = {
+    type: 'divert',
+    target: string;
+}
+
+type ActorLineNode = {
+    type: 'actor_line',
+    actor: string;
+    line: string;
+}
+
+type SimpleChoice = {
+    type: 'simple_choice',
+    line: string;
+    conditions: string[];
+    divert: string | null;
+}
+
+type AstNode = KnotNode | DivertNode | ActorLineNode | SimpleChoice;
 
 function oldParseYackFile(src: string, filename: string): string {
     const knots: Knot[] = [];

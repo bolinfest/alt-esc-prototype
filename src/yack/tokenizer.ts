@@ -19,7 +19,7 @@ type DivertToken = {
     target: string;
 } & Position;
 
-type ChoiceToken = {
+export type ChoiceToken = {
     type: "choice";
 } & Position;
 
@@ -33,12 +33,12 @@ type ActorLine = {
     actor: string;
 } & Position;
 
-type ControlFlow = {
+export type ControlFlowToken = {
     type: "control_flow";
     keyword: 'if' | 'elif' | 'else' | 'endif';
 } & Position;
 
-export type Token = StringLiteralToken | KnotToken | DivertToken | ConditionToken | ChoiceToken | ActorLine | ControlFlow;
+export type Token = StringLiteralToken | KnotToken | DivertToken | ConditionToken | ChoiceToken | ActorLine | ControlFlowToken;
 
 export function tokenize(src: string): Token[] {
     let line = 0;
@@ -56,7 +56,7 @@ export function tokenize(src: string): Token[] {
 
         tokenizeLine(code, line, tokens);
 
-        indexOfPosition = newlineIndex + 1;        
+        indexOfPosition = newlineIndex + 1;
         ++line;
     }
     return tokens;
@@ -175,7 +175,7 @@ function tokenizeLine(code: string, line: number, tokens: Token[]) {
                             break;
                         }
                     }
-                }                
+                }
                 throw Error(`unexpected character \`${c}\` at ${formatPosition(line, column)}`);
             }
         }
