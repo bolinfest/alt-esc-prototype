@@ -141,7 +141,7 @@ class Parser {
                 };
             }
             case 'control_flow': {
-                return this.parseComplexChoice();
+                return this.parseComplexChoice('if');
             }
             default:
                 this.throwParseError(`did not expect token of type \`${nextToken.type}\` following \`*\``, nextToken);
@@ -149,7 +149,7 @@ class Parser {
     }
 
     /** `this.currentToken` must be the first token for the ComplexChoice. */
-    private parseComplexChoice(): ComplexChoice {
+    private parseComplexChoice(expectedKeyword: 'if' | 'elif'): ComplexChoice {
         const token = this.currentToken;
         if (token == null) {
             throw Error('no tokens for choice');
@@ -157,8 +157,8 @@ class Parser {
 
         switch (token.type) {
             case 'control_flow': {
-                if (token.keyword !== 'if') {
-                    this.throwParseError(`expected \`if\` keyword but was \`${token.keyword}\``, token);
+                if (token.keyword !== expectedKeyword) {
+                    this.throwParseError(`expected keyword \`${expectedKeyword}\` but was \`${token.keyword}\``, token);
                 }
 
                 const ifCondition = this.nextToken();
@@ -169,7 +169,7 @@ class Parser {
                 // Ensure next token is current one before calling into parseComplexChoice().
                 this.nextToken();
                 // This requires no empty if-blocks?
-                const consequent = this.parseComplexChoice();
+                const consequent = this.parseComplexChoice('if');
 
                 const nextToken = this.nextToken();
                 let alternate = null;
@@ -177,14 +177,16 @@ class Parser {
                     this.throwParseError('missing else or endif after if', token);
                 } else if (nextToken.type !== 'control_flow') {
                     this.throwParseError('expect else or endif to close if', nextToken);
-                } else if (nextToken.keyword !== 'else' && nextToken.keyword !== 'endif') {
-                    this.throwParseError('expect else or endif to close if', nextToken);
+                } else if (nextToken.keyword === 'if') {
+                    this.throwParseError('expect else, elif, or endif to close if', nextToken);
                 } else if (nextToken.keyword === 'endif') {
                     // All done!
+                } else if (nextToken.keyword === 'elif') {
+                    alternate = this.parseComplexChoice('elif');
                 } else if (nextToken.keyword === 'else') {
                     // Ensure next token is current one before calling into parseComplexChoice().
                     this.nextToken();
-                    alternate = this.parseComplexChoice();
+                    alternate = this.parseComplexChoice('if');
                     const endifToken = this.nextToken();
                     if (endifToken?.type !== 'control_flow' || endifToken.keyword !== 'endif') {
                         this.throwParseError('else missing closing endif', nextToken);

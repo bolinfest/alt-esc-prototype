@@ -50,6 +50,8 @@ susie: "Beets."
 
 * if [!inInventory(Inventory.camera)]
     "Where did you say the camera was again?" -> where_is_camera
+  elif [Note.isDone()]
+    "I think I'm done with the assignment." -> assignment_done
   else
     "Can I get some more film?" -> film
   endif
