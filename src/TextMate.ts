@@ -1,23 +1,19 @@
-import type { ScopeName, TextMateGrammar, ScopeNameInfo } from "./providers";
+import type {ScopeName, TextMateGrammar, ScopeNameInfo} from './providers';
 
 // @ts-ignore
-import * as onig_wasm from "vscode-oniguruma/release/onig.wasm";
-import * as monaco from "monaco-editor";
-import { SimpleLanguageInfoProvider } from "./providers";
-import { registerLanguages } from "./register";
-import VsCodeDarkTheme from "./vs-dark-plus-theme";
-import {
-  createOnigScanner,
-  createOnigString,
-  loadWASM,
-} from "vscode-oniguruma";
+import * as onig_wasm from 'vscode-oniguruma/release/onig.wasm';
+import * as monaco from 'monaco-editor';
+import {SimpleLanguageInfoProvider} from './providers';
+import {registerLanguages} from './register';
+import VsCodeDarkTheme from './vs-dark-plus-theme';
+import {createOnigScanner, createOnigString, loadWASM} from 'vscode-oniguruma';
 
-import PythonConfiguration from "./languages/python-configuration";
-import PythonGrammar from "./languages/python-grammar";
-import * as GDScriptGrammar from "./languages/GDScript.tmLanguage.json";
-import * as GDScriptConfiguration from "./languages/gdscript-configuration.json";
-import { rehydrateRegexps } from "./configuration";
-import { LanguageId } from "./register";
+import PythonConfiguration from './languages/python-configuration';
+import PythonGrammar from './languages/python-grammar';
+import * as GDScriptGrammar from './languages/GDScript.tmLanguage.json';
+import * as GDScriptConfiguration from './languages/gdscript-configuration.json';
+import {rehydrateRegexps} from './configuration';
+import {LanguageId} from './register';
 
 type Monaco = typeof monaco;
 
@@ -28,7 +24,7 @@ interface DemoScopeNameInfo extends ScopeNameInfo {
 export async function registerLanguagesForMonaco(monaco: Monaco) {
   // @ts-ignore
   const module = await onig_wasm;
-  const { default: uri } = module;
+  const {default: uri} = module;
   const response = await fetch(uri);
   await loadWASM(response);
   const onigLib = Promise.resolve({
@@ -38,38 +34,38 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
 
   const languages: monaco.languages.ILanguageExtensionPoint[] = [
     {
-      id: "gdscript",
-      aliases: ["GDScript", "gdscript"],
-      extensions: [".gd"],
+      id: 'gdscript',
+      aliases: ['GDScript', 'gdscript'],
+      extensions: ['.gd'],
     },
     {
-      id: "python",
-      extensions: [".py"],
-      aliases: ["Python", "py"],
-      firstLine: "^#!\\s*/?.*\\bpython[0-9.-]*\\b",
+      id: 'python',
+      extensions: ['.py'],
+      aliases: ['Python', 'py'],
+      firstLine: '^#!\\s*/?.*\\bpython[0-9.-]*\\b',
     },
   ];
-  const grammars: { [scopeName: string]: DemoScopeNameInfo } = {
-    "source.gdscript": {
-      language: "gdscript",
-      path: "GDScript.tmLanguage.json",
+  const grammars: {[scopeName: string]: DemoScopeNameInfo} = {
+    'source.gdscript': {
+      language: 'gdscript',
+      path: 'GDScript.tmLanguage.json',
     },
-    "source.python": {
-      language: "python",
-      path: "MagicPython.tmLanguage.json",
+    'source.python': {
+      language: 'python',
+      path: 'MagicPython.tmLanguage.json',
     },
   };
 
   function fetchGrammar(scopeName: string): Promise<TextMateGrammar> {
     switch (scopeName) {
-      case "source.gdscript":
+      case 'source.gdscript':
         return Promise.resolve({
-          type: "json",
+          type: 'json',
           grammar: JSON.stringify(GDScriptGrammar),
         });
-      case "source.python":
+      case 'source.python':
         return Promise.resolve({
-          type: "json",
+          type: 'json',
           grammar: JSON.stringify(PythonGrammar),
         });
       default:
@@ -79,13 +75,13 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
 
   function fetchConfiguration(language: LanguageId) {
     switch (language) {
-      case "gdscript":
+      case 'gdscript':
         return Promise.resolve(
-          rehydrateRegexps(JSON.stringify(GDScriptConfiguration))
+          rehydrateRegexps(JSON.stringify(GDScriptConfiguration)),
         );
-      case "python":
+      case 'python':
         return Promise.resolve(
-          rehydrateRegexps(JSON.stringify(PythonConfiguration))
+          rehydrateRegexps(JSON.stringify(PythonConfiguration)),
         );
       default:
         return Promise.reject(`No configuration found for ${language}`);
@@ -95,7 +91,7 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
   const provider = new SimpleLanguageInfoProvider({
     grammars,
     fetchGrammar,
-    configurations: languages.map((language) => language.id),
+    configurations: languages.map(language => language.id),
     fetchConfiguration,
     theme: VsCodeDarkTheme,
     onigLib,
@@ -104,7 +100,7 @@ export async function registerLanguagesForMonaco(monaco: Monaco) {
   registerLanguages(
     languages,
     (language: LanguageId) => provider.fetchLanguageInfo(language),
-    monaco
+    monaco,
   );
   provider.injectCSS();
 }

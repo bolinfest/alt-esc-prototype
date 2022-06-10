@@ -1,24 +1,24 @@
 type RootBlock = {
-  type: "ROOT";
+  type: 'ROOT';
 };
 
 type StateBlock = {
-  type: "STATE";
+  type: 'STATE';
 };
 
 type ObjectBlock = {
-  type: "OBJECT";
+  type: 'OBJECT';
   id: string;
 };
 
 type EventBlock = {
-  type: "EVENT";
+  type: 'EVENT';
   id: string;
   /* event args? */
 };
 
 type VerbBlock = {
-  type: "VERB";
+  type: 'VERB';
   id: string;
   /* verb args? */
   indent: string;
@@ -30,19 +30,19 @@ const includeComments = false;
 
 export function parseRoomScriptSource(src: string, roomName: string): string {
   const out: string[] = [];
-  const state: ParseState[] = [{ type: "ROOT" }];
+  const state: ParseState[] = [{type: 'ROOT'}];
 
-  for (const [_lineNumber, line] of src.split("\n").entries()) {
+  for (const [_lineNumber, line] of src.split('\n').entries()) {
     if (isComment(line)) {
       if (includeComments) {
-        out.push(line + "\n");
+        out.push(line + '\n');
       }
       continue;
     }
 
     const currentState = state.slice(-1)[0];
     switch (currentState.type) {
-      case "ROOT": {
+      case 'ROOT': {
         const objectBlockBegin = tryParseObjectBlockBegin(line);
         if (objectBlockBegin != null) {
           state.push(objectBlockBegin);
@@ -59,7 +59,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
 
         break;
       }
-      case "STATE": {
+      case 'STATE': {
         if (isCloseTopLevelBlock(line)) {
           state.pop();
           break;
@@ -73,7 +73,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
 
         break;
       }
-      case "OBJECT": {
+      case 'OBJECT': {
         if (isCloseTopLevelBlock(line)) {
           state.pop();
           break;
@@ -93,7 +93,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
         }
         break;
       }
-      case "VERB": {
+      case 'VERB': {
         if (isCloseBlock(line, currentState.indent)) {
           state.pop();
         }
@@ -105,7 +105,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
     }
   }
 
-  return out.join("");
+  return out.join('');
 }
 
 function isComment(line: string): boolean {
@@ -115,7 +115,7 @@ function isComment(line: string): boolean {
 function tryParseStateBlockBegin(line: string): StateBlock | null {
   const match = line.match(/^\s*state\s+\{\s*$/);
   if (match != null) {
-    return { type: "STATE" };
+    return {type: 'STATE'};
   } else {
     return null;
   }
@@ -124,7 +124,7 @@ function tryParseStateBlockBegin(line: string): StateBlock | null {
 function tryParseObjectBlockBegin(line: string): ObjectBlock | null {
   const match = line.match(/^\s*object\s+([\w-]+)\s*\{\s*$/);
   if (match != null) {
-    return { type: "OBJECT", id: match[1] };
+    return {type: 'OBJECT', id: match[1]};
   } else {
     return null;
   }
@@ -133,13 +133,13 @@ function tryParseObjectBlockBegin(line: string): ObjectBlock | null {
 function tryParseVerbBlockBegin(line: string): VerbBlock | null {
   const match = line.match(/^(\s*)([A-Z_]+)\(\)\s*\{\s*$/);
   if (match != null) {
-    return { type: "VERB", id: match[2], indent: match[1] };
+    return {type: 'VERB', id: match[2], indent: match[1]};
   } else {
     return null;
   }
 }
 
-function tryParseProperty(line: string): { id: string; value: string } | null {
+function tryParseProperty(line: string): {id: string; value: string} | null {
   const match = line.match(/^(\s*)([\w-]+)\s*=(.+)$/);
   if (match != null) {
     let value = null;

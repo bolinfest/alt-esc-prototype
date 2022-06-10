@@ -1,4 +1,4 @@
-import type * as monaco from "monaco-editor";
+import type * as monaco from 'monaco-editor';
 type Monaco = typeof monaco;
 
 /** String identifier like 'cpp' or 'java'. */
@@ -19,19 +19,19 @@ export type LanguageInfo = {
 export function registerLanguages(
   languages: monaco.languages.ILanguageExtensionPoint[],
   fetchLanguageInfo: (language: LanguageId) => Promise<LanguageInfo>,
-  monaco: Monaco
+  monaco: Monaco,
 ) {
   // We have to register all of the languages with Monaco synchronously before
   // we can configure them.
   for (const extensionPoint of languages) {
     // Recall that the id is a short name like 'cpp' or 'java'.
-    const { id: languageId } = extensionPoint;
+    const {id: languageId} = extensionPoint;
     monaco.languages.register(extensionPoint);
 
     // Lazy-load the tokens provider and configuration data.
     monaco.languages.onLanguage(languageId, async () => {
-      const { tokensProvider, configuration } = await fetchLanguageInfo(
-        languageId
+      const {tokensProvider, configuration} = await fetchLanguageInfo(
+        languageId,
       );
 
       if (tokensProvider != null) {

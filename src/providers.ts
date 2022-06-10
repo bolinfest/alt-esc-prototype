@@ -1,20 +1,20 @@
-import type * as monaco from "monaco-editor";
+import type * as monaco from 'monaco-editor';
 import type {
   IGrammar,
   IRawGrammar,
   IRawTheme,
   IOnigLib,
   StackElement,
-} from "vscode-textmate";
-import type { LanguageId, LanguageInfo } from "./register";
+} from 'vscode-textmate';
+import type {LanguageId, LanguageInfo} from './register';
 
-import { INITIAL, Registry, parseRawGrammar } from "vscode-textmate";
+import {INITIAL, Registry, parseRawGrammar} from 'vscode-textmate';
 // @ts-ignore
-import { generateTokensCSSForColorMap } from "monaco-editor/esm/vs/editor/common/modes/supports/tokenization.js";
+import {generateTokensCSSForColorMap} from 'monaco-editor/esm/vs/editor/common/modes/supports/tokenization.js';
 // @ts-ignore
-import { TokenizationRegistry } from "monaco-editor/esm/vs/editor/common/modes.js";
+import {TokenizationRegistry} from 'monaco-editor/esm/vs/editor/common/modes.js';
 // @ts-ignore
-import { Color } from "monaco-editor/esm/vs/base/common/color.js";
+import {Color} from 'monaco-editor/esm/vs/base/common/color.js';
 
 type Monaco = typeof monaco;
 
@@ -22,20 +22,20 @@ type Monaco = typeof monaco;
 export type ScopeName = string;
 
 export type TextMateGrammar = {
-  type: "json" | "plist";
+  type: 'json' | 'plist';
   grammar: string;
 };
 
 export type SimpleLanguageInfoProviderConfig = {
   // Key is a ScopeName.
-  grammars: { [scopeName: string]: ScopeNameInfo };
+  grammars: {[scopeName: string]: ScopeNameInfo};
 
   fetchGrammar: (scopeName: ScopeName) => Promise<TextMateGrammar>;
 
   configurations: LanguageId[];
 
   fetchConfiguration: (
-    language: LanguageId
+    language: LanguageId,
   ) => Promise<monaco.languages.LanguageConfiguration>;
 
   // This must be available synchronously to the SimpleLanguageInfoProvider
@@ -73,7 +73,7 @@ export class SimpleLanguageInfoProvider {
   private tokensProviderCache: TokensProviderCache;
 
   constructor(private config: SimpleLanguageInfoProviderConfig) {
-    const { grammars, fetchGrammar, theme, onigLib, monaco } = config;
+    const {grammars, fetchGrammar, theme, onigLib, monaco} = config;
     this.monaco = monaco;
 
     this.registry = new Registry({
@@ -85,7 +85,7 @@ export class SimpleLanguageInfoProvider {
           return null;
         }
 
-        const { type, grammar } = await fetchGrammar(scopeName);
+        const {type, grammar} = await fetchGrammar(scopeName);
         // If this is a JSON grammar, filePath must be specified with a `.json`
         // file extension or else parseRawGrammar() will assume it is a PLIST
         // grammar.
@@ -134,11 +134,11 @@ export class SimpleLanguageInfoProvider {
       this.getTokensProviderForLanguage(language),
       this.config.fetchConfiguration(language),
     ]);
-    return { tokensProvider, configuration };
+    return {tokensProvider, configuration};
   }
 
   private getTokensProviderForLanguage(
-    language: string
+    language: string,
   ): Promise<monaco.languages.EncodedTokensProvider | null> {
     const scopeName = this.getScopeNameForLanguage(language);
     if (scopeName == null) {
@@ -151,7 +151,7 @@ export class SimpleLanguageInfoProvider {
     // setting the language configuration.
     return this.tokensProviderCache.createEncodedTokensProvider(
       scopeName,
-      encodedLanguageId
+      encodedLanguageId,
     );
   }
 
@@ -172,7 +172,7 @@ class TokensProviderCache {
 
   async createEncodedTokensProvider(
     scopeName: string,
-    encodedLanguageId: number
+    encodedLanguageId: number,
   ): Promise<monaco.languages.EncodedTokensProvider> {
     const grammar = await this.getGrammar(scopeName, encodedLanguageId);
 
@@ -183,14 +183,14 @@ class TokensProviderCache {
 
       tokenizeEncoded(
         line: string,
-        state: monaco.languages.IState
+        state: monaco.languages.IState,
       ): monaco.languages.IEncodedLineTokens {
         const tokenizeLineResult2 = grammar.tokenizeLine2(
           line,
-          state as StackElement
+          state as StackElement,
         );
-        const { tokens, ruleStack: endState } = tokenizeLineResult2;
-        return { tokens, endState };
+        const {tokens, ruleStack: endState} = tokenizeLineResult2;
+        return {tokens, endState};
       },
     };
   }
@@ -216,7 +216,7 @@ class TokensProviderCache {
       .loadGrammarWithConfiguration(
         scopeName,
         encodedLanguageId,
-        grammarConfiguration
+        grammarConfiguration,
       )
       .then((grammar: IGrammar | null) => {
         if (grammar) {
@@ -233,19 +233,19 @@ class TokensProviderCache {
 function createStyleElementForColorsCSS(): HTMLStyleElement {
   // We want to ensure that our <style> element appears after Monaco's so that
   // we can override some styles it inserted for the default theme.
-  const style = document.createElement("style");
+  const style = document.createElement('style');
 
   // We expect the styles we need to override to be in an element with the class
   // name 'monaco-colors' based on:
   // https://github.com/microsoft/vscode/blob/f78d84606cd16d75549c82c68888de91d8bdec9f/src/vs/editor/standalone/browser/standaloneThemeServiceImpl.ts#L206-L214
-  const monacoColors = document.getElementsByClassName("monaco-colors")[0];
+  const monacoColors = document.getElementsByClassName('monaco-colors')[0];
   if (monacoColors) {
     monacoColors.parentElement?.insertBefore(style, monacoColors.nextSibling);
   } else {
     // Though if we cannot find it, just append to <head>.
-    let { head } = document;
+    let {head} = document;
     if (head == null) {
-      head = document.getElementsByTagName("head")[0];
+      head = document.getElementsByTagName('head')[0];
     }
     head?.appendChild(style);
   }

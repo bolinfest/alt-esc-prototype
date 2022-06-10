@@ -1,13 +1,13 @@
-import { useRef, useState } from 'react';
+import {useRef, useState} from 'react';
 import loader from '@monaco-editor/loader';
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import './App.css';
 import {ARCADE_ROOM} from './Rooms';
 import {KITCHEN_SINK} from './Yacks';
-import Editor from "@monaco-editor/react";
-import { registerLanguagesForMonaco } from './TextMate';
-import { parseRoomScriptSource } from './parser/parser';
-import { parseYackFile } from './yack/parser';
+import Editor from '@monaco-editor/react';
+import {registerLanguagesForMonaco} from './TextMate';
+import {parseRoomScriptSource} from './parser/parser';
+import {parseYackFile} from './yack/parser';
 
 const useYackParser = true;
 
@@ -18,8 +18,8 @@ type Monaco = typeof monaco;
 // with the versions we want to load that are configured with TextMate grammars.
 loader.config({
   paths: {
-    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor-core@0.30.1/min/vs'
-  }
+    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor-core@0.30.1/min/vs',
+  },
 });
 
 // It would be cleaner to use Recoil for state management rather than this
@@ -31,29 +31,41 @@ export default function App() {
   if (monacoLibrary != null) {
     return <RealApp />;
   } else {
-    loader.init().then(monaco => { registerLanguagesForMonaco(monaco).then(() => setMonacoLibrary(monaco)) });
+    loader.init().then(monaco => {
+      registerLanguagesForMonaco(monaco).then(() => setMonacoLibrary(monaco));
+    });
     return <div>Loading monaco...</div>;
   }
 }
 
 function RealApp() {
-  const sourceEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const outputEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const sourceEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
+  const outputEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
 
-  function handleSourceEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
+  function handleSourceEditorDidMount(
+    editor: monaco.editor.IStandaloneCodeEditor,
+    monaco: Monaco,
+  ) {
     editor.updateOptions({
       minimap: {
-        enabled: false
-      }
+        enabled: false,
+      },
     });
     sourceEditorRef.current = editor;
   }
 
-  function handleOutputEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) {
+  function handleOutputEditorDidMount(
+    editor: monaco.editor.IStandaloneCodeEditor,
+    monaco: Monaco,
+  ) {
     editor.updateOptions({
       minimap: {
-        enabled: false
-      }
+        enabled: false,
+      },
     });
     outputEditorRef.current = editor;
 
