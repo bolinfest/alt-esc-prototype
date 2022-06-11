@@ -1,7 +1,7 @@
 export type KnotNode = {
   type: 'knot';
   name: string;
-  children: AstNode[];
+  children: KnotChildNode[];
 };
 
 type DivertNode = {
@@ -37,9 +37,4 @@ type ControlFlowChoice = {
 
 export type ComplexChoice = ControlFlowChoice | UnconditionalChoice;
 
-type AstNode =
-  | KnotNode
-  | DivertNode
-  | ActorLineNode
-  | SimpleChoice
-  | ComplexChoice;
+type KnotChildNode = DivertNode | ActorLineNode | SimpleChoice | ComplexChoice;
