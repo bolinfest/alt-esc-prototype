@@ -15,12 +15,6 @@ test('parseYackFile', () => {
 `;
   const ast = parseYackFile(ifElseChoice, 'ifElseChoice.yack');
   expect(ast).toEqual([
-    // Ideally, we should strip this empty knot.
-    {
-      type: 'knot',
-      name: '',
-      children: [],
-    },
     {
       type: 'knot',
       name: 'delores_dev',

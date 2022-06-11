@@ -73,7 +73,11 @@ class Parser {
       this.nextToken();
     }
 
-    return this.knots;
+    // Currently, it is undefined behavior if the "anonymous" knot has children.
+    // In the expected case where the "anonymous" knot is unused, strip it from
+    // the output.
+    const sliceIndex = this.knots[0].children.length === 0 ? 1 : 0;
+    return this.knots.slice(sliceIndex);
   }
 
   private parseChoiceExpr(
