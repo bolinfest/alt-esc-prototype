@@ -105,16 +105,14 @@ function tokenizeLine(code: string, line: number, tokens: Token[]) {
         if (column === 0) {
           const knotName = tryParseKnot(code);
           if (knotName != null) {
-            {
-              tokens.push({
-                type: 'knot',
-                name: knotName,
-                line,
-                column,
-              });
-              // Can return because a knot must match the entire line.
-              return;
-            }
+            tokens.push({
+              type: 'knot',
+              name: knotName,
+              line,
+              column,
+            });
+            // Can return because a knot must match the entire line.
+            return;
           }
         }
         throw Error(`unexpected \`=\` at ${formatPosition(line, column)}`);
