@@ -32,7 +32,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
   const out: string[] = [];
   const state: ParseState[] = [{type: 'ROOT'}];
 
-  for (const [_lineNumber, line] of src.split('\n').entries()) {
+  for (const line of src.split('\n')) {
     if (isComment(line)) {
       if (includeComments) {
         out.push(line + '\n');
