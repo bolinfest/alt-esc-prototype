@@ -1,4 +1,4 @@
-import type {ScopeName, TextMateGrammar, ScopeNameInfo} from './providers';
+import type {TextMateGrammar, ScopeNameInfo} from './providers';
 
 // @ts-ignore
 import * as onig_wasm from 'vscode-oniguruma/release/onig.wasm';
