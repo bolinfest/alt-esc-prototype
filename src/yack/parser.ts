@@ -1,3 +1,9 @@
+import type {
+  ComplexChoice,
+  KnotNode,
+  SimpleChoice,
+  UnconditionalChoice,
+} from './ast';
 import type {ChoiceToken, Token} from './tokenizer';
 
 import {tokenize} from './tokenizer';
@@ -237,49 +243,3 @@ class Parser {
     throw new Error(`parse error on line ${position.line + 1}: ${message}`);
   }
 }
-
-type KnotNode = {
-  type: 'knot';
-  name: string;
-  children: AstNode[];
-};
-
-type DivertNode = {
-  type: 'divert';
-  target: string;
-};
-
-type ActorLineNode = {
-  type: 'actor_line';
-  actor: string;
-  line: string;
-};
-
-type SimpleChoice = {
-  type: 'simple_choice';
-  line: string;
-  conditions: string[];
-  divert: string | null;
-};
-
-type UnconditionalChoice = {
-  type: 'unconditional_choice';
-  line: string;
-  divert: string | null;
-};
-
-type ControlFlowChoice = {
-  type: 'control_flow_choice';
-  condition: string;
-  consequent: UnconditionalChoice | ControlFlowChoice | null;
-  alternate: UnconditionalChoice | ControlFlowChoice | null;
-};
-
-type ComplexChoice = ControlFlowChoice | UnconditionalChoice;
-
-type AstNode =
-  | KnotNode
-  | DivertNode
-  | ActorLineNode
-  | SimpleChoice
-  | ComplexChoice;
