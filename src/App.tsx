@@ -8,6 +8,7 @@ import Editor from '@monaco-editor/react';
 import {registerLanguagesForMonaco} from './TextMate';
 import {parseRoomScriptSource} from './parser/parser';
 import {parseYackFile} from './yack/parser';
+import { generateGDScript } from './yack/codegen';
 
 const useYackParser = true;
 
@@ -111,5 +112,5 @@ function RealApp() {
 
 function parseAndSerializeYackFile(src: string, filename: string): string {
   const ast = parseYackFile(src, filename);
-  return JSON.stringify(ast, null, 2);
+  return generateGDScript(ast);
 }

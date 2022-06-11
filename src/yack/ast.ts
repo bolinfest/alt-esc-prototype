@@ -4,12 +4,12 @@ export type KnotNode = {
   children: KnotChildNode[];
 };
 
-type DivertNode = {
+export type DivertNode = {
   type: 'divert';
   target: string;
 };
 
-type ActorLineNode = {
+export type ActorLineNode = {
   type: 'actor_line';
   actor: string;
   line: string;

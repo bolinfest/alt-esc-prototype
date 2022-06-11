@@ -1,4 +1,5 @@
 import {parseYackFile} from './parser';
+import {generateGDScript} from './codegen';
 
 test('parseYackFile', () => {
   const ifElseChoice = `\
@@ -54,4 +55,56 @@ test('parseYackFile', () => {
       ],
     },
   ]);
+
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "delores_dev":
+                state = yield __knot__delores_dev()
+
+
+func __knot__delores_dev() -> String:
+    var __genvar_0 = yield menu([
+        {
+            "type": "control_flow_choice",
+            "condition": "!inInventory(Inventory.camera)",
+            "consequent": {
+                "type": "unconditional_choice",
+                "line": "Where did you say the camera was again?",
+                "divert": "where_is_camera"
+            },
+            "alternate": {
+                "type": "control_flow_choice",
+                "condition": "Note.isDone()",
+                "consequent": {
+                    "type": "unconditional_choice",
+                    "line": "I think I'm done with the assignment.",
+                    "divert": "assignment_done"
+                },
+                "alternate": {
+                    "type": "unconditional_choice",
+                    "line": "Can I get some more film?",
+                    "divert": "film"
+                }
+            }
+        },
+        {
+            "type": "simple_choice",
+            "line": "Want to see my work so far?",
+            "conditions": [
+                "temponce",
+                "!Note.isDone() && !YACK(natalie_seen_work)"
+            ],
+            "divert": null
+        },
+    ])
+    if __genvar_0 != null:
+        return __genvar_0
+    return null
+
+
+`);
 });
