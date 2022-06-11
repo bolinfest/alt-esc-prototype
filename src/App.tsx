@@ -72,7 +72,7 @@ function RealApp() {
     const model = sourceEditorRef.current?.getModel();
     if (model != null) {
       const onDidChangeContent = () => {
-        const parseFn = useYackParser ? parseYackFile : parseRoomScriptSource;
+        const parseFn = useYackParser ? parseAndSerializeYackFile : parseRoomScriptSource;
         const gdscript = parseFn(model.getValue(), 'Arcade.room');
         editor.getModel()?.setValue(gdscript);
       };
@@ -107,4 +107,9 @@ function RealApp() {
       </header>
     </div>
   );
+}
+
+function parseAndSerializeYackFile(src: string, filename: string): string {
+  const ast = parseYackFile(src, filename);
+  return JSON.stringify(ast, null, 2);
 }

@@ -2,12 +2,11 @@ import type {ChoiceToken, Token} from './tokenizer';
 
 import {tokenize} from './tokenizer';
 
-export function parseYackFile(src: string, filename: string): string {
+export function parseYackFile(src: string, filename: string): KnotNode[] {
   const tokens = tokenize(src);
-  console.log(JSON.stringify(tokens, null, 2));
   const parser = new Parser(tokens);
   const ast = parser.parse();
-  return JSON.stringify(ast, null, 2);
+  return ast;
 }
 
 class Parser {
