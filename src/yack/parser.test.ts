@@ -108,3 +108,44 @@ func __knot__delores_dev() -> String:
 
 `);
 });
+
+test('knot fallthrough', () => {
+  const firstKnotFallsThroughToSecond = `\
+=== first ===
+
+alice: "Hi, Bob!"
+bob: "Hi, Alice!"
+
+=== second ===
+
+alice: "It's so nice to talk in person instead of sending messages all the time."
+`;
+  const ast = parseYackFile(
+    firstKnotFallsThroughToSecond,
+    'alice_and_bob.yack',
+  );
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "first":
+                state = yield __knot__first()
+            "second":
+                state = yield __knot__second()
+
+
+func __knot__first() -> String:
+    sayLine(alice, "Hi, Bob!")
+    sayLine(bob, "Hi, Alice!")
+    return "second"
+
+
+func __knot__second() -> String:
+    sayLine(alice, "It's so nice to talk in person instead of sending messages all the time.")
+    return null
+
+
+`);
+});

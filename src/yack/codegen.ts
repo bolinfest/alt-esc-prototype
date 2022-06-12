@@ -36,14 +36,18 @@ export function generateGDScript(ast: KnotNode[]): string {
 
   generateStateController(ast, ctx);
 
-  for (const knot of ast) {
-    generateKnot(knot, ctx);
-  }
+  ast.forEach((knot, index) =>
+    generateKnot(knot, ast[index + 1]?.name ?? null, ctx),
+  );
 
   return ctx.code.join('');
 }
 
-function generateKnot(knot: KnotNode, ctx: DisplayContext) {
+function generateKnot(
+  knot: KnotNode,
+  nextKnotName: string | null,
+  ctx: DisplayContext,
+) {
   // Sequence of "Choice" children must be grouped into dialogs.
   const normalizedChildren = normalizeKnotChildren(knot);
 
@@ -77,7 +81,10 @@ function generateKnot(knot: KnotNode, ctx: DisplayContext) {
 
   // Ensure there is a final return clause, if necessary.
   if (!endsWithDivert(normalizedChildren)) {
-    addLine('return null', ctx);
+    addLine(
+      `return ${nextKnotName != null ? quote(nextKnotName) : 'null'}`,
+      ctx,
+    );
   }
 
   unindent(ctx);
