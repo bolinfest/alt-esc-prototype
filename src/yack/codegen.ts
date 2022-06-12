@@ -1,6 +1,7 @@
 import type {
   ActorLineNode,
   ComplexChoice,
+  ConditionalNode,
   DivertNode,
   KnotNode,
   SimpleChoice,
@@ -117,7 +118,7 @@ function generateStateController(knots: KnotNode[], ctx: DisplayContext) {
   addBlankLine(ctx, 2);
 }
 
-type KnotChild = ActorLineNode | Dialog | DivertNode;
+type KnotChild = ActorLineNode | ConditionalNode | Dialog | DivertNode;
 
 function normalizeKnotChildren(knot: KnotNode): KnotChild[] {
   const out = [];

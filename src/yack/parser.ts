@@ -1,5 +1,7 @@
 import type {
   ComplexChoice,
+  ConditionalNode,
+  KnotChildNode,
   KnotNode,
   SimpleChoice,
   UnconditionalChoice,
@@ -7,6 +9,13 @@ import type {
 import type {ChoiceToken, Token} from './tokenizer';
 
 import {tokenize} from './tokenizer';
+
+type Scope = {
+  state: 'consequent' | 'alternate';
+  conditions: string[];
+  consequent: KnotChildNode[];
+  alternate: KnotChildNode[];
+};
 
 export function parseYackFile(src: string, filename: string): KnotNode[] {
   const tokens = tokenize(src);
@@ -19,6 +28,7 @@ class Parser {
   private index = 0;
   private currentToken: Token | null;
   private knots: KnotNode[] = [{type: 'knot', name: '', children: []}];
+  private scopes: Scope[] = [];
 
   constructor(private tokens: Token[]) {
     this.currentToken = tokens[this.index] ?? null;
@@ -37,6 +47,22 @@ class Parser {
     return this.knots[this.knots.length - 1];
   }
 
+  private addChild(child: KnotChildNode) {
+    if (this.scopes.length > 0) {
+      const topScope = this.scopes[this.scopes.length - 1];
+      switch (topScope.state) {
+        case 'consequent':
+          topScope.consequent.push(child);
+          break;
+        case 'alternate':
+          topScope.alternate.push(child);
+          break;
+      }
+    } else {
+      this.currentKnot().children.push(child);
+    }
+  }
+
   parse(): KnotNode[] {
     while (this.currentToken != null) {
       switch (this.currentToken.type) {
@@ -50,7 +76,7 @@ class Parser {
           break;
         }
         case 'divert': {
-          this.currentKnot().children.push({
+          this.addChild({
             type: 'divert',
             target: this.currentToken.target,
           });
@@ -59,7 +85,7 @@ class Parser {
         case 'actor_line': {
           const nextToken = this.peek();
           if (nextToken?.type === 'string') {
-            this.currentKnot().children.push({
+            this.addChild({
               type: 'actor_line',
               actor: this.currentToken.actor,
               line: nextToken.value,
@@ -70,7 +96,48 @@ class Parser {
         case 'choice': {
           const choiceExpr = this.parseChoiceExpr(this.currentToken);
           if (choiceExpr != null) {
-            this.currentKnot().children.push(choiceExpr);
+            this.addChild(choiceExpr);
+          }
+          break;
+        }
+        case 'control_flow': {
+          switch (this.currentToken.keyword) {
+            case 'if': {
+              const conditions = this.parseConditions();
+              const scope: Scope = {
+                state: 'consequent',
+                conditions,
+                consequent: [],
+                alternate: [],
+              };
+              this.scopes.push(scope);
+              // Then need to push context onto stack until else of endif reached?
+              break;
+            }
+            case 'endif': {
+              const topScope = this.scopes.pop();
+              if (topScope == null) {
+                this.throwParseError(
+                  'no open block closed by endif',
+                  this.currentToken,
+                );
+              }
+              const conditional: ConditionalNode = {
+                type: 'conditional',
+                conditions: topScope.conditions,
+                consequent: topScope.consequent,
+                alternate: topScope.alternate,
+              };
+              this.addChild(conditional);
+              break;
+            }
+            // TODO: handle else and elif.
+            default: {
+              this.throwParseError(
+                `unexpected keyword \`${this.currentToken.keyword}\` at the top level`,
+                this.currentToken,
+              );
+            }
           }
           break;
         }
@@ -102,20 +169,7 @@ class Parser {
         const line = nextToken.value;
 
         // Consume optional conditions and diverts.
-        // Should stop consuming tokens once the line number changes?
-        const conditions: string[] = [];
-        while (true) {
-          if (this.peek()?.type === 'condition') {
-            const conditionToken = this.nextToken();
-            if (conditionToken?.type === 'condition') {
-              conditions.push(conditionToken.expr);
-            } else {
-              throw new Error('invariant violation');
-            }
-          } else {
-            break;
-          }
-        }
+        const conditions = this.parseConditions();
 
         let divert = null;
         if (this.peek()?.type === 'divert') {
@@ -143,6 +197,28 @@ class Parser {
           nextToken,
         );
     }
+  }
+
+  /**
+   * `this.currentToken` is a token before the conditions. Note this will return
+   * the empty list if the next token is not a `ConditionToken`.
+   */
+  private parseConditions(): string[] {
+    // Should stop consuming tokens once the line number changes?
+    const conditions: string[] = [];
+    while (true) {
+      if (this.peek()?.type === 'condition') {
+        const conditionToken = this.nextToken();
+        if (conditionToken?.type === 'condition') {
+          conditions.push(conditionToken.expr);
+        } else {
+          throw new Error('invariant violation');
+        }
+      } else {
+        break;
+      }
+    }
+    return conditions;
   }
 
   /** `this.currentToken` must be the first token for the ComplexChoice. */

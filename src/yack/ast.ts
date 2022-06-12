@@ -37,4 +37,16 @@ type ControlFlowChoice = {
 
 export type ComplexChoice = ControlFlowChoice | UnconditionalChoice;
 
-type KnotChildNode = DivertNode | ActorLineNode | SimpleChoice | ComplexChoice;
+export type ConditionalNode = {
+  type: 'conditional';
+  conditions: string[];
+  consequent: KnotChildNode[];
+  alternate: KnotChildNode[];
+};
+
+export type KnotChildNode =
+  | DivertNode
+  | ActorLineNode
+  | SimpleChoice
+  | ComplexChoice
+  | ConditionalNode;

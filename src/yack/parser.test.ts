@@ -149,3 +149,39 @@ func __knot__second() -> String:
 
 `);
 });
+
+test('top-level conditional', () => {
+  const topLevelConditional = `\
+=== example ===
+
+if [not door_unlocked]
+  alice: "This door is locked."
+  -> ask_about_key
+endif
+`;
+  const ast = parseYackFile(topLevelConditional, 'top_level_conditional.yack');
+  expect(ast).toEqual([
+    {
+      type: 'knot',
+      name: 'example',
+      children: [
+        {
+          type: 'conditional',
+          conditions: ['not door_unlocked'],
+          consequent: [
+            {
+              type: 'actor_line',
+              actor: 'alice',
+              line: 'This door is locked.',
+            },
+            {
+              type: 'divert',
+              target: 'ask_about_key',
+            },
+          ],
+          alternate: [],
+        },
+      ],
+    },
+  ]);
+});
