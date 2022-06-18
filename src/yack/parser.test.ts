@@ -114,6 +114,71 @@ func __knot__delores_dev() -> String:
 `);
 });
 
+test('dialog conditional with null option', () => {
+  const topLevelConditional = `\
+=== example ===
+
+* if [not has_key]
+    "Let's look for a key."
+  elif [not tried_key]
+    "I have an idea--let's try that key we found!"
+  endif
+* "I don't have any ideas."
+`;
+  const ast = parseYackFile(
+    topLevelConditional,
+    'dialog_with_null_option.yack',
+  );
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "example":
+                state = yield __knot__example()
+
+
+func __knot__example() -> String:
+    var __genvar_0 = yield menu([
+        {
+            "type": "control_flow_choice",
+            "conditions": [
+                "not has_key"
+            ],
+            "consequent": {
+                "type": "unconditional_choice",
+                "line": "Let's look for a key.",
+                "divert": null
+            },
+            "alternate": {
+                "type": "control_flow_choice",
+                "conditions": [
+                    "not tried_key"
+                ],
+                "consequent": {
+                    "type": "unconditional_choice",
+                    "line": "I have an idea--let's try that key we found!",
+                    "divert": null
+                },
+                "alternate": null
+            }
+        },
+        {
+            "type": "simple_choice",
+            "line": "I don't have any ideas.",
+            "conditions": [],
+            "divert": null
+        },
+    ])
+    if __genvar_0 != null:
+        return __genvar_0
+    return null
+
+
+`);
+});
+
 test('knot fallthrough', () => {
   const firstKnotFallsThroughToSecond = `\
 === first ===
