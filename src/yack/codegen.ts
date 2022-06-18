@@ -6,6 +6,7 @@ import type {
   KnotChildNode,
   KnotNode,
   MacroNode,
+  ScriptNode,
   SimpleChoice,
 } from './ast';
 
@@ -105,6 +106,10 @@ function generateBlock(
         generateMacro(child, ctx);
         break;
       }
+      case 'script': {
+        generateInlineScript(child, ctx);
+        break;
+      }
       // TODO: prove this is unreachable with the type checker?
       default: {
         throw new Error(`unexpected node type in block: ${child}`);
@@ -145,7 +150,8 @@ type KnotChild =
   | ConditionalNode
   | Dialog
   | DivertNode
-  | MacroNode;
+  | MacroNode
+  | ScriptNode;
 
 function normalizeKnotChildren(knotChildNodes: KnotChildNode[]): KnotChild[] {
   const out = [];
@@ -227,6 +233,11 @@ function generateConditional(node: ConditionalNode, ctx: DisplayContext) {
 function generateMacro(node: MacroNode, ctx: DisplayContext) {
   const {name, args} = node;
   addLine(`call_macro(${quote(name)}, [${args.map(quote).join(',')}])`, ctx);
+}
+
+function generateInlineScript(node: ScriptNode, ctx: DisplayContext) {
+  const {code} = node;
+  addLine(code, ctx);
 }
 
 function functionNameForKnotName(name: string): string {

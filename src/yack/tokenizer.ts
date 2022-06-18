@@ -28,6 +28,12 @@ type ConditionToken = {
   expr: string;
 } & Position;
 
+/** Script native to the host platform. */
+type ScriptToken = {
+  type: 'script';
+  code: string;
+} & Position;
+
 export type ActorLineToken = {
   type: 'actor_line';
   actor: string;
@@ -49,6 +55,7 @@ export type Token =
   | KnotToken
   | DivertToken
   | ConditionToken
+  | ScriptToken
   | ChoiceToken
   | ActorLineToken
   | ControlFlowToken
@@ -153,6 +160,23 @@ function tokenizeLine(code: string, line: number, tokens: Token[]) {
           throw Error(`unterminated \`[\` at ${formatPosition(line, column)}`);
         }
       }
+      case '{': {
+        // Ultimately, we should support multi-line script blocks, but for now, we
+        // support only single-line ones.
+        const script = tryParseScript(code.slice(column));
+        if (script != null) {
+          tokens.push({
+            type: 'script',
+            code: script.expr,
+            line,
+            column,
+          });
+          column += script.length - 1;
+          break;
+        } else {
+          throw Error(`unterminated \`{\` at ${formatPosition(line, column)}`);
+        }
+      }
       case '*': {
         if (column === 0 && code.charAt(1) === ' ') {
           tokens.push({
@@ -255,6 +279,17 @@ function tryParseCondition(
   return match != null
     ? {
         expr: match[1],
+        length: match[0].length,
+      }
+    : null;
+}
+
+function tryParseScript(code: string): {expr: string; length: number} | null {
+  // For now, assume a script cannot contain a } character.
+  const match = code.match(/\{\s*([^\}]+)\}/);
+  return match != null
+    ? {
+        expr: match[1].trim(),
         length: match[0].length,
       }
     : null;

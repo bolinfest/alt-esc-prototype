@@ -483,3 +483,40 @@ func __knot__example() -> String:
 
 `);
 });
+
+test('inline script', () => {
+  const macroExample = `\
+=== example ===
+
+{ call_some_gdscript( true ) }
+`;
+  const ast = parseYackFile(macroExample, 'inlineScriptExample.yack');
+  expect(ast).toEqual([
+    {
+      type: 'knot',
+      name: 'example',
+      children: [
+        {
+          type: 'script',
+          code: 'call_some_gdscript( true )',
+        },
+      ],
+    },
+  ]);
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "example":
+                state = yield __knot__example()
+
+
+func __knot__example() -> String:
+    call_some_gdscript( true )
+    return null
+
+
+`);
+});

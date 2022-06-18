@@ -50,10 +50,16 @@ export type MacroNode = {
   args: string[];
 };
 
+export type ScriptNode = {
+  type: 'script';
+  code: string;
+};
+
 export type KnotChildNode =
   | DivertNode
   | ActorLineNode
   | SimpleChoice
   | ComplexChoice
   | ConditionalNode
-  | MacroNode;
+  | MacroNode
+  | ScriptNode;

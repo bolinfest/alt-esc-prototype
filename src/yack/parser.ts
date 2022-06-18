@@ -212,6 +212,14 @@ class Parser {
           this.parseMacro(this.currentToken);
           break;
         }
+        case 'script': {
+          const {code} = this.currentToken;
+          this.addChild({
+            type: 'script',
+            code,
+          });
+          break;
+        }
         default: {
           this.throwParseError(
             `unexpected token \`${JSON.stringify(this.currentToken)}`,
