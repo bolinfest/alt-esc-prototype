@@ -28,7 +28,7 @@ type ConditionToken = {
   expr: string;
 } & Position;
 
-type ActorLine = {
+export type ActorLineToken = {
   type: 'actor_line';
   actor: string;
 } & Position;
@@ -44,7 +44,7 @@ export type Token =
   | DivertToken
   | ConditionToken
   | ChoiceToken
-  | ActorLine
+  | ActorLineToken
   | ControlFlowToken;
 
 export function tokenize(src: string): Token[] {

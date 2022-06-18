@@ -6,7 +6,7 @@ import type {
   SimpleChoice,
   UnconditionalChoice,
 } from './ast';
-import type {ChoiceToken, Token} from './tokenizer';
+import type {ActorLineToken, ChoiceToken, Token} from './tokenizer';
 
 import {tokenize} from './tokenizer';
 
@@ -85,14 +85,7 @@ class Parser {
           break;
         }
         case 'actor_line': {
-          const nextToken = this.peek();
-          if (nextToken?.type === 'string') {
-            this.addChild({
-              type: 'actor_line',
-              actor: this.currentToken.actor,
-              line: nextToken.value,
-            });
-          }
+          this.parseActorLine(this.currentToken);
           break;
         }
         case 'choice': {
@@ -195,10 +188,6 @@ class Parser {
           }
           break;
         }
-        case 'string': {
-          // TODO: Why isn't this processed?
-          break;
-        }
         default: {
           this.throwParseError(
             `unexpected token \`${JSON.stringify(this.currentToken)}`,
@@ -259,6 +248,22 @@ class Parser {
           `did not expect token of type \`${nextToken.type}\` following \`*\``,
           nextToken,
         );
+    }
+  }
+
+  private parseActorLine(currentToken: ActorLineToken) {
+    const nextToken = this.nextToken();
+    if (nextToken?.type === 'string') {
+      this.addChild({
+        type: 'actor_line',
+        actor: currentToken.actor,
+        line: nextToken.value,
+      });
+    } else {
+      this.throwParseError(
+        `actor line must be followed by a string literal`,
+        currentToken,
+      );
     }
   }
 
