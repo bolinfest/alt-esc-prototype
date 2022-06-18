@@ -118,10 +118,12 @@ test('dialog conditional with null option', () => {
   const topLevelConditional = `\
 === example ===
 
-* if [not has_key]
-    "Let's look for a key."
+* if [has_key]
+    none  // Nothing to say.
   elif [not tried_key]
     "I have an idea--let's try that key we found!"
+  else
+    "We could try the key again?"
   endif
 * "I don't have any ideas."
 `;
@@ -144,13 +146,9 @@ func __knot__example() -> String:
         {
             "type": "control_flow_choice",
             "conditions": [
-                "not has_key"
+                "has_key"
             ],
-            "consequent": {
-                "type": "unconditional_choice",
-                "line": "Let's look for a key.",
-                "divert": null
-            },
+            "consequent": null,
             "alternate": {
                 "type": "control_flow_choice",
                 "conditions": [
@@ -161,7 +159,11 @@ func __knot__example() -> String:
                     "line": "I have an idea--let's try that key we found!",
                     "divert": null
                 },
-                "alternate": null
+                "alternate": {
+                    "type": "unconditional_choice",
+                    "line": "We could try the key again?",
+                    "divert": null
+                }
             }
         },
         {

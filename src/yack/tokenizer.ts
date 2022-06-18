@@ -44,6 +44,11 @@ export type ControlFlowToken = {
   keyword: 'if' | 'elif' | 'else' | 'endif';
 } & Position;
 
+/** "None" option in a conditional dialog. */
+export type NoneToken = {
+  type: 'none';
+} & Position;
+
 /** Symbol that is not a keyword. */
 export type SymbolToken = {
   type: 'symbol';
@@ -59,6 +64,7 @@ export type Token =
   | ChoiceToken
   | ActorLineToken
   | ControlFlowToken
+  | NoneToken
   | SymbolToken;
 
 export function tokenize(src: string): Token[] {
@@ -211,6 +217,14 @@ function tokenizeLine(code: string, line: number, tokens: Token[]) {
               tokens.push({
                 type: 'control_flow',
                 keyword: symbol,
+                line,
+                column,
+              });
+              column += ident.length - 1;
+              break;
+            } else if (symbol === 'none') {
+              tokens.push({
+                type: 'none',
                 line,
                 column,
               });

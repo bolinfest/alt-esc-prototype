@@ -275,7 +275,14 @@ class Parser {
         };
       }
       case 'control_flow': {
-        return this.parseComplexChoice('if');
+        const complexChoice = this.parseComplexChoice('if');
+        if (complexChoice == null) {
+          this.throwParseError(
+            'conditional dialog choice failed to parse',
+            nextToken,
+          );
+        }
+        return complexChoice;
       }
       default:
         this.throwParseError(
@@ -324,7 +331,9 @@ class Parser {
   }
 
   /** `this.currentToken` must be the first token for the ComplexChoice. */
-  private parseComplexChoice(expectedKeyword: 'if' | 'elif'): ComplexChoice {
+  private parseComplexChoice(
+    expectedKeyword: 'if' | 'elif',
+  ): ComplexChoice | null {
     const token = this.currentToken;
     if (token == null) {
       throw Error('no tokens for choice');
@@ -386,6 +395,9 @@ class Parser {
           consequent,
           alternate,
         };
+      }
+      case 'none': {
+        return null;
       }
       case 'string': {
         return this.parseUnconditionalChoice();
