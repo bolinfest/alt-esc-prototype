@@ -3,6 +3,7 @@ import type {
   ComplexChoice,
   ConditionalNode,
   DivertNode,
+  KnotChildNode,
   KnotNode,
   SimpleChoice,
 } from './ast';
@@ -49,14 +50,36 @@ function generateKnot(
   nextKnotName: string | null,
   ctx: DisplayContext,
 ) {
-  // Sequence of "Choice" children must be grouped into dialogs.
-  const normalizedChildren = normalizeKnotChildren(knot);
-
   // Knot function should potentially do some work and then return
   // the name of the next state to go to. Body of func may yield?
   const {name} = knot;
   addLine(`func ${functionNameForKnotName(name)}() -> String:`, ctx);
   indent(ctx);
+
+  const normalizedChildren = generateBlock(knot.children, ctx);
+
+  // Ensure there is a final return clause, if necessary.
+  if (!endsWithDivert(normalizedChildren)) {
+    addLine(
+      `return ${nextKnotName != null ? quote(nextKnotName) : 'null'}`,
+      ctx,
+    );
+  }
+
+  unindent(ctx);
+  addBlankLine(ctx, 2);
+}
+
+function generateBlock(
+  knotChildNodes: KnotChildNode[],
+  ctx: DisplayContext,
+): KnotChild[] {
+  // Sequence of "Choice" children must be grouped into dialogs.
+  const normalizedChildren = normalizeKnotChildren(knotChildNodes);
+  if (normalizedChildren.length === 0) {
+    addLine('pass', ctx);
+    return normalizedChildren;
+  }
 
   for (const child of normalizedChildren) {
     switch (child.type) {
@@ -73,23 +96,17 @@ function generateKnot(
         generateDivert(child, ctx);
         break;
       }
+      case 'conditional': {
+        generateConditional(child, ctx);
+        break;
+      }
       // TODO: prove this is unreachable with the type checker?
       default: {
-        throw new Error(`unexpected node type in knot ${name}: ${child}`);
+        throw new Error(`unexpected node type in block: ${child}`);
       }
     }
   }
-
-  // Ensure there is a final return clause, if necessary.
-  if (!endsWithDivert(normalizedChildren)) {
-    addLine(
-      `return ${nextKnotName != null ? quote(nextKnotName) : 'null'}`,
-      ctx,
-    );
-  }
-
-  unindent(ctx);
-  addBlankLine(ctx, 2);
+  return normalizedChildren;
 }
 
 function generateStateController(knots: KnotNode[], ctx: DisplayContext) {
@@ -120,10 +137,10 @@ function generateStateController(knots: KnotNode[], ctx: DisplayContext) {
 
 type KnotChild = ActorLineNode | ConditionalNode | Dialog | DivertNode;
 
-function normalizeKnotChildren(knot: KnotNode): KnotChild[] {
+function normalizeKnotChildren(knotChildNodes: KnotChildNode[]): KnotChild[] {
   const out = [];
   let dialog: Dialog | null = null;
-  for (const child of knot.children) {
+  for (const child of knotChildNodes) {
     const {type} = child;
     if (
       type === 'simple_choice' ||
@@ -176,6 +193,25 @@ function generateDialog(dialog: Dialog, ctx: DisplayContext) {
   indent(ctx);
   addLine(`return ${selectedChoice}`, ctx);
   unindent(ctx);
+}
+
+function generateConditional(node: ConditionalNode, ctx: DisplayContext) {
+  const {conditions: rawConditions, consequent, alternate} = node;
+  // TODO: Some processing will have to be applied to conditionals at some point...
+  const conditions = rawConditions
+    .map(cond => `eval_cond(${JSON.stringify(cond)})`)
+    .join(' && ');
+  addLine(`if ${conditions}:`, ctx);
+  indent(ctx);
+  generateBlock(consequent, ctx);
+  unindent(ctx);
+
+  if (alternate.length > 0) {
+    addLine('else:', ctx);
+    indent(ctx);
+    generateBlock(alternate, ctx);
+    unindent(ctx);
+  }
 }
 
 function functionNameForKnotName(name: string): string {

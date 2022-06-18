@@ -387,4 +387,45 @@ endif
       ],
     },
   ]);
+
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "example":
+                state = yield __knot__example()
+
+
+func __knot__example() -> String:
+    if eval_cond("a"):
+        sayLine(alice, "a")
+        if eval_cond("b"):
+            sayLine(alice, "a & b")
+        else:
+            if eval_cond("c"):
+                sayLine(alice, "a & !b & c")
+            else:
+                sayLine(alice, "a & !b & !c")
+    else:
+        if eval_cond("d"):
+            sayLine(alice, "!a & d")
+            if eval_cond("e"):
+                sayLine(alice, "!a & d & e")
+            else:
+                if eval_cond("f"):
+                    sayLine(alice, "!a & d & !e & f")
+                else:
+                    sayLine(alice, "!a & d & !e & !f")
+        else:
+            sayLine(alice, "!a & !d")
+            if eval_cond("g"):
+                sayLine(alice, "!a & !d & g")
+            else:
+                sayLine(alice, "!a & !d & !g")
+    return null
+
+
+`);
 });
