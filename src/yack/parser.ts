@@ -10,11 +10,9 @@ import type {ChoiceToken, Token} from './tokenizer';
 
 import {tokenize} from './tokenizer';
 
-type Scope = {
-  state: 'consequent' | 'alternate';
-  conditions: string[];
-  consequent: KnotChildNode[];
-  alternate: KnotChildNode[];
+type ConditionalBlock = {
+  state: 'consequent' | 'alternate' | 'closed';
+  node: ConditionalNode;
 };
 
 export function parseYackFile(src: string, filename: string): KnotNode[] {
@@ -28,7 +26,7 @@ class Parser {
   private index = 0;
   private currentToken: Token | null;
   private knots: KnotNode[] = [{type: 'knot', name: '', children: []}];
-  private scopes: Scope[] = [];
+  private scopes: ConditionalBlock[] = [];
 
   constructor(private tokens: Token[]) {
     this.currentToken = tokens[this.index] ?? null;
@@ -52,11 +50,13 @@ class Parser {
       const topScope = this.scopes[this.scopes.length - 1];
       switch (topScope.state) {
         case 'consequent':
-          topScope.consequent.push(child);
+          topScope.node.consequent.push(child);
           break;
         case 'alternate':
-          topScope.alternate.push(child);
+          topScope.node.alternate.push(child);
           break;
+        case 'closed':
+          throw new Error(`cannot add child ${child} to closed block`);
       }
     } else {
       this.currentKnot().children.push(child);
@@ -104,11 +104,14 @@ class Parser {
           switch (this.currentToken.keyword) {
             case 'if': {
               const conditions = this.parseConditions();
-              const scope: Scope = {
+              const scope: ConditionalBlock = {
                 state: 'consequent',
-                conditions,
-                consequent: [],
-                alternate: [],
+                node: {
+                  type: 'conditional',
+                  conditions,
+                  consequent: [],
+                  alternate: [],
+                },
               };
               this.scopes.push(scope);
               // Then need to push context onto stack until else of endif reached?
@@ -122,16 +125,11 @@ class Parser {
                   this.currentToken,
                 );
               }
-              const conditional: ConditionalNode = {
-                type: 'conditional',
-                conditions: topScope.conditions,
-                consequent: topScope.consequent,
-                alternate: topScope.alternate,
-              };
-              this.addChild(conditional);
+              this.addChild(topScope.node);
+              topScope.state = 'closed';
+              // Check to see what else is "closed," if anything?
               break;
             }
-            // TODO: handle else and elif.
             default: {
               this.throwParseError(
                 `unexpected keyword \`${this.currentToken.keyword}\` at the top level`,
