@@ -339,9 +339,12 @@ class Parser {
           );
         }
 
-        const ifCondition = this.nextToken();
-        if (ifCondition?.type !== 'condition') {
-          this.throwParseError('if must be followed by a condition', token);
+        const conditions = this.parseConditions();
+        if (conditions.length === 0) {
+          this.throwParseError(
+            `${expectedKeyword} must be followed by a condition`,
+            token,
+          );
         }
 
         // Ensure next token is current one before calling into parseComplexChoice().
@@ -379,7 +382,7 @@ class Parser {
 
         return {
           type: 'control_flow_choice',
-          condition: ifCondition.expr,
+          conditions,
           consequent,
           alternate,
         };

@@ -30,7 +30,7 @@ export type UnconditionalChoice = {
 
 type ControlFlowChoice = {
   type: 'control_flow_choice';
-  condition: string;
+  conditions: string[];
   consequent: UnconditionalChoice | ControlFlowChoice | null;
   alternate: UnconditionalChoice | ControlFlowChoice | null;
 };

@@ -195,8 +195,8 @@ function generateDialog(dialog: Dialog, ctx: DisplayContext) {
         break;
       }
       case 'control_flow_choice': {
-        const {type, condition, consequent, alternate} = choice;
-        addJSONArg({type, condition, consequent, alternate}, ctx);
+        const {type, conditions, consequent, alternate} = choice;
+        addJSONArg({type, conditions, consequent, alternate}, ctx);
         break;
       }
     }

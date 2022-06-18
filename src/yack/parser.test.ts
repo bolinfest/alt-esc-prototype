@@ -5,7 +5,7 @@ test('parseYackFile', () => {
   const ifElseChoice = `\
 === delores_dev ===
 
-* if [!inInventory(Inventory.camera)]
+* if [!inInventory(Inventory.camera)] [once]
     "Where did you say the camera was again?" -> where_is_camera
   elif [Note.isDone()]
     "I think I'm done with the assignment." -> assignment_done
@@ -22,7 +22,7 @@ test('parseYackFile', () => {
       children: [
         {
           type: 'control_flow_choice',
-          condition: '!inInventory(Inventory.camera)',
+          conditions: ['!inInventory(Inventory.camera)', 'once'],
           consequent: {
             type: 'unconditional_choice',
             line: 'Where did you say the camera was again?',
@@ -30,7 +30,7 @@ test('parseYackFile', () => {
           },
           alternate: {
             type: 'control_flow_choice',
-            condition: 'Note.isDone()',
+            conditions: ['Note.isDone()'],
             consequent: {
               type: 'unconditional_choice',
               line: "I think I'm done with the assignment.",
@@ -70,7 +70,10 @@ func __knot__delores_dev() -> String:
     var __genvar_0 = yield menu([
         {
             "type": "control_flow_choice",
-            "condition": "!inInventory(Inventory.camera)",
+            "conditions": [
+                "!inInventory(Inventory.camera)",
+                "once"
+            ],
             "consequent": {
                 "type": "unconditional_choice",
                 "line": "Where did you say the camera was again?",
@@ -78,7 +81,9 @@ func __knot__delores_dev() -> String:
             },
             "alternate": {
                 "type": "control_flow_choice",
-                "condition": "Note.isDone()",
+                "conditions": [
+                    "Note.isDone()"
+                ],
                 "consequent": {
                     "type": "unconditional_choice",
                     "line": "I think I'm done with the assignment.",
@@ -154,7 +159,7 @@ test('top-level conditional, consequent only', () => {
   const topLevelConditional = `\
 === example ===
 
-if [not door_unlocked]
+if [not door_unlocked] [jiggled_handle]
   alice: "This door is locked."
   -> ask_about_key
 endif
@@ -167,7 +172,7 @@ endif
       children: [
         {
           type: 'conditional',
-          conditions: ['not door_unlocked'],
+          conditions: ['not door_unlocked', 'jiggled_handle'],
           consequent: [
             {
               type: 'actor_line',
