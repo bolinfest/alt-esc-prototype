@@ -65,10 +65,24 @@ class Parser {
     }
   }
 
+  private assertScopeStackIsClear() {
+    if (this.scopes.length === 0) {
+      return;
+    }
+
+    const scope = this.scopes[this.scopes.length - 1];
+    if (this.currentToken != null) {
+      this.throwParseError(`unclosed conditional`, this.currentToken);
+    } else {
+      throw new Error('unclosed conditional at end of file');
+    }
+  }
+
   parse(): KnotNode[] {
     while (this.currentToken != null) {
       switch (this.currentToken.type) {
         case 'knot': {
+          this.assertScopeStackIsClear();
           const knot: KnotNode = {
             type: 'knot',
             name: this.currentToken.name,
@@ -197,6 +211,8 @@ class Parser {
       }
       this.nextToken();
     }
+
+    this.assertScopeStackIsClear();
 
     // Currently, it is undefined behavior if the "anonymous" knot has children.
     // In the expected case where the "anonymous" knot is unused, strip it from

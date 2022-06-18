@@ -265,7 +265,10 @@ else
     alice: "!a & !d & g"
   else
     alice: "!a & !d & !g"
+  endif
 endif
+
+alice: "Well, that was fun."
 `;
   const ast = parseYackFile(topLevelConditional, 'complex_conditional.yack');
   expect(ast).toEqual([
@@ -384,6 +387,11 @@ endif
             },
           ],
         },
+        {
+          type: 'actor_line',
+          actor: 'alice',
+          line: 'Well, that was fun.',
+        },
       ],
     },
   ]);
@@ -424,6 +432,7 @@ func __knot__example() -> String:
                 sayLine(alice, "!a & !d & g")
             else:
                 sayLine(alice, "!a & !d & !g")
+    sayLine(alice, "Well, that was fun.")
     return null
 
 
