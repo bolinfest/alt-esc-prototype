@@ -115,8 +115,8 @@ class Parser {
                   alternate: [],
                 },
               };
+              this.addChild(scope.node);
               this.scopes.push(scope);
-              // Then need to push context onto stack until else of endif reached?
               break;
             }
             case 'elif': {
@@ -144,6 +144,24 @@ class Parser {
               this.scopes.push(scope);
               break;
             }
+            case 'else': {
+              const topScope = this.scopes[this.scopes.length - 1];
+              if (topScope == null) {
+                this.throwParseError(
+                  'no if continued by else',
+                  this.currentToken,
+                );
+              }
+              if (topScope.state !== 'consequent') {
+                this.throwParseError(
+                  'else must complement an if',
+                  this.currentToken,
+                );
+              }
+
+              topScope.state = 'alternate';
+              break;
+            }
             case 'endif': {
               const topScope = this.scopes[this.scopes.length - 1];
               if (topScope == null) {
@@ -162,9 +180,6 @@ class Parser {
                 const scope = this.scopes[this.scopes.length - 1];
                 if (scope?.state === 'closed') {
                   this.scopes.pop();
-                  if (this.scopes.length === 0) {
-                    this.addChild(scope.node);
-                  }
                 } else {
                   break;
                 }
@@ -180,7 +195,16 @@ class Parser {
           }
           break;
         }
-        // Error on unexpected tokens?
+        case 'string': {
+          // TODO: Why isn't this processed?
+          break;
+        }
+        default: {
+          this.throwParseError(
+            `unexpected token \`${JSON.stringify(this.currentToken)}`,
+            this.currentToken,
+          );
+        }
       }
       this.nextToken();
     }

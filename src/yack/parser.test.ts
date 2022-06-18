@@ -236,3 +236,155 @@ endif
     },
   ]);
 });
+
+test('complex conditional', () => {
+  const topLevelConditional = `\
+=== example ===
+
+if [a]
+  alice: "a"
+  if [b]
+    alice: "a & b"
+  elif [c]
+    alice: "a & !b & c"
+  else
+    alice: "a & !b & !c"
+  endif
+elif [d]
+  alice: "!a & d"
+  if [e]
+    alice: "!a & d & e"
+  elif [f]
+    alice: "!a & d & !e & f"
+  else
+    alice: "!a & d & !e & !f"
+  endif
+else
+  alice: "!a & !d"
+  if [g]
+    alice: "!a & !d & g"
+  else
+    alice: "!a & !d & !g"
+endif
+`;
+  const ast = parseYackFile(topLevelConditional, 'complex_conditional.yack');
+  expect(ast).toEqual([
+    {
+      type: 'knot',
+      name: 'example',
+      children: [
+        {
+          type: 'conditional',
+          conditions: ['a'],
+          consequent: [
+            {
+              type: 'actor_line',
+              actor: 'alice',
+              line: 'a',
+            },
+            {
+              type: 'conditional',
+              conditions: ['b'],
+              consequent: [
+                {
+                  type: 'actor_line',
+                  actor: 'alice',
+                  line: 'a & b',
+                },
+              ],
+              alternate: [
+                {
+                  type: 'conditional',
+                  conditions: ['c'],
+                  consequent: [
+                    {
+                      type: 'actor_line',
+                      actor: 'alice',
+                      line: 'a & !b & c',
+                    },
+                  ],
+                  alternate: [
+                    {
+                      type: 'actor_line',
+                      actor: 'alice',
+                      line: 'a & !b & !c',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+          alternate: [
+            {
+              type: 'conditional',
+              conditions: ['d'],
+              consequent: [
+                {
+                  type: 'actor_line',
+                  actor: 'alice',
+                  line: '!a & d',
+                },
+                {
+                  type: 'conditional',
+                  conditions: ['e'],
+                  consequent: [
+                    {
+                      type: 'actor_line',
+                      actor: 'alice',
+                      line: '!a & d & e',
+                    },
+                  ],
+                  alternate: [
+                    {
+                      type: 'conditional',
+                      conditions: ['f'],
+                      consequent: [
+                        {
+                          type: 'actor_line',
+                          actor: 'alice',
+                          line: '!a & d & !e & f',
+                        },
+                      ],
+                      alternate: [
+                        {
+                          type: 'actor_line',
+                          actor: 'alice',
+                          line: '!a & d & !e & !f',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+              alternate: [
+                {
+                  type: 'actor_line',
+                  actor: 'alice',
+                  line: '!a & !d',
+                },
+                {
+                  type: 'conditional',
+                  conditions: ['g'],
+                  consequent: [
+                    {
+                      type: 'actor_line',
+                      actor: 'alice',
+                      line: '!a & !d & g',
+                    },
+                  ],
+                  alternate: [
+                    {
+                      type: 'actor_line',
+                      actor: 'alice',
+                      line: '!a & !d & !g',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ]);
+});
