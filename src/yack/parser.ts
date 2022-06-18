@@ -56,7 +56,9 @@ class Parser {
           topScope.node.alternate.push(child);
           break;
         case 'closed':
-          throw new Error(`cannot add child ${child} to closed block`);
+          throw new Error(
+            `cannot add child ${JSON.stringify(child)} to closed block`,
+          );
       }
     } else {
       this.currentKnot().children.push(child);
@@ -117,17 +119,56 @@ class Parser {
               // Then need to push context onto stack until else of endif reached?
               break;
             }
+            case 'elif': {
+              const topScope = this.scopes[this.scopes.length - 1];
+              if (topScope == null) {
+                this.throwParseError(
+                  'no if continued by elif',
+                  this.currentToken,
+                );
+              }
+
+              const conditions = this.parseConditions();
+              const scope: ConditionalBlock = {
+                state: 'consequent',
+                node: {
+                  type: 'conditional',
+                  conditions,
+                  consequent: [],
+                  alternate: [],
+                },
+              };
+              topScope.state = 'alternate';
+              this.addChild(scope.node);
+              topScope.state = 'closed';
+              this.scopes.push(scope);
+              break;
+            }
             case 'endif': {
-              const topScope = this.scopes.pop();
+              const topScope = this.scopes[this.scopes.length - 1];
               if (topScope == null) {
                 this.throwParseError(
                   'no open block closed by endif',
                   this.currentToken,
                 );
               }
-              this.addChild(topScope.node);
               topScope.state = 'closed';
-              // Check to see what else is "closed," if anything?
+
+              // This endif could be closing a chain of elifs, so walk up the
+              // scope stack, popping off nodes in the 'closed' state. If the
+              // stack is cleared, then the ConditionalNode can be added to the
+              // KnotChildNode.
+              while (true) {
+                const scope = this.scopes[this.scopes.length - 1];
+                if (scope?.state === 'closed') {
+                  this.scopes.pop();
+                  if (this.scopes.length === 0) {
+                    this.addChild(scope.node);
+                  }
+                } else {
+                  break;
+                }
+              }
               break;
             }
             default: {

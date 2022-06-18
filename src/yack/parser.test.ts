@@ -150,7 +150,7 @@ func __knot__second() -> String:
 `);
 });
 
-test('top-level conditional', () => {
+test('top-level conditional, consequent only', () => {
   const topLevelConditional = `\
 === example ===
 
@@ -180,6 +180,57 @@ endif
             },
           ],
           alternate: [],
+        },
+      ],
+    },
+  ]);
+});
+
+test('top-level conditional with elif', () => {
+  const topLevelConditional = `\
+=== example ===
+
+if [not door_visible]
+  alice: "There is no way out!"
+elif [not door_unlocked]
+  alice: "This door is locked."
+  -> ask_about_key
+endif
+`;
+  const ast = parseYackFile(topLevelConditional, 'top_level_conditional.yack');
+  expect(ast).toEqual([
+    {
+      type: 'knot',
+      name: 'example',
+      children: [
+        {
+          type: 'conditional',
+          conditions: ['not door_visible'],
+          consequent: [
+            {
+              type: 'actor_line',
+              actor: 'alice',
+              line: 'There is no way out!',
+            },
+          ],
+          alternate: [
+            {
+              type: 'conditional',
+              conditions: ['not door_unlocked'],
+              consequent: [
+                {
+                  type: 'actor_line',
+                  actor: 'alice',
+                  line: 'This door is locked.',
+                },
+                {
+                  type: 'divert',
+                  target: 'ask_about_key',
+                },
+              ],
+              alternate: [],
+            },
+          ],
         },
       ],
     },
