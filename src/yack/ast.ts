@@ -44,9 +44,16 @@ export type ConditionalNode = {
   alternate: KnotChildNode[];
 };
 
+export type MacroNode = {
+  type: 'macro';
+  name: string;
+  args: string[];
+};
+
 export type KnotChildNode =
   | DivertNode
   | ActorLineNode
   | SimpleChoice
   | ComplexChoice
-  | ConditionalNode;
+  | ConditionalNode
+  | MacroNode;

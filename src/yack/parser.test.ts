@@ -438,3 +438,48 @@ func __knot__example() -> String:
 
 `);
 });
+
+test('macros and args', () => {
+  const macroExample = `\
+=== example ===
+
+play_sound rumbling_stomach
+play_animation "harry_devours_sandwich"
+`;
+  const ast = parseYackFile(macroExample, 'macroExample.yack');
+  expect(ast).toEqual([
+    {
+      type: 'knot',
+      name: 'example',
+      children: [
+        {
+          type: 'macro',
+          name: 'play_sound',
+          args: ['rumbling_stomach'],
+        },
+        {
+          type: 'macro',
+          name: 'play_animation',
+          args: ['harry_devours_sandwich'],
+        },
+      ],
+    },
+  ]);
+  const gdscript = generateGDScript(ast);
+  expect(gdscript).toBe(`\
+func main(init_state):
+    var state = init_state
+    while state != null:
+        match state:
+            "example":
+                state = yield __knot__example()
+
+
+func __knot__example() -> String:
+    call_macro("play_sound", ["rumbling_stomach"])
+    call_macro("play_animation", ["harry_devours_sandwich"])
+    return null
+
+
+`);
+});

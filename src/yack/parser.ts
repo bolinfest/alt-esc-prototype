@@ -6,7 +6,12 @@ import type {
   SimpleChoice,
   UnconditionalChoice,
 } from './ast';
-import type {ActorLineToken, ChoiceToken, Token} from './tokenizer';
+import type {
+  ActorLineToken,
+  ChoiceToken,
+  SymbolToken,
+  Token,
+} from './tokenizer';
 
 import {tokenize} from './tokenizer';
 
@@ -202,6 +207,11 @@ class Parser {
           }
           break;
         }
+        case 'symbol': {
+          // We assume this is the start of a macro.
+          this.parseMacro(this.currentToken);
+          break;
+        }
         default: {
           this.throwParseError(
             `unexpected token \`${JSON.stringify(this.currentToken)}`,
@@ -394,6 +404,36 @@ class Parser {
       line,
       divert,
     };
+  }
+
+  private parseMacro(macroNameToken: SymbolToken) {
+    const {value: name, line} = macroNameToken;
+    const args: string[] = [];
+    while (true) {
+      const token = this.peek();
+      if (token == null || token.line !== line) {
+        break;
+      }
+
+      // Consume the next token, but use `token` because TypeScript
+      // is convinced it is non-null at this point.
+      this.nextToken();
+      switch (token.type) {
+        case 'symbol':
+          args.push(token.value);
+          break;
+        case 'string':
+          args.push(token.value);
+          break;
+        default:
+          this.throwParseError('unexpected macro arg type', token);
+      }
+    }
+    this.addChild({
+      type: 'macro',
+      name,
+      args,
+    });
   }
 
   private throwParseError(

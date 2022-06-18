@@ -5,6 +5,7 @@ import type {
   DivertNode,
   KnotChildNode,
   KnotNode,
+  MacroNode,
   SimpleChoice,
 } from './ast';
 
@@ -100,6 +101,10 @@ function generateBlock(
         generateConditional(child, ctx);
         break;
       }
+      case 'macro': {
+        generateMacro(child, ctx);
+        break;
+      }
       // TODO: prove this is unreachable with the type checker?
       default: {
         throw new Error(`unexpected node type in block: ${child}`);
@@ -135,7 +140,12 @@ function generateStateController(knots: KnotNode[], ctx: DisplayContext) {
   addBlankLine(ctx, 2);
 }
 
-type KnotChild = ActorLineNode | ConditionalNode | Dialog | DivertNode;
+type KnotChild =
+  | ActorLineNode
+  | ConditionalNode
+  | Dialog
+  | DivertNode
+  | MacroNode;
 
 function normalizeKnotChildren(knotChildNodes: KnotChildNode[]): KnotChild[] {
   const out = [];
@@ -212,6 +222,11 @@ function generateConditional(node: ConditionalNode, ctx: DisplayContext) {
     generateBlock(alternate, ctx);
     unindent(ctx);
   }
+}
+
+function generateMacro(node: MacroNode, ctx: DisplayContext) {
+  const {name, args} = node;
+  addLine(`call_macro(${quote(name)}, [${args.map(quote).join(',')}])`, ctx);
 }
 
 function functionNameForKnotName(name: string): string {

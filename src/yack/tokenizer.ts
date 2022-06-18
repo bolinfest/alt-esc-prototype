@@ -38,6 +38,12 @@ export type ControlFlowToken = {
   keyword: 'if' | 'elif' | 'else' | 'endif';
 } & Position;
 
+/** Symbol that is not a keyword. */
+export type SymbolToken = {
+  type: 'symbol';
+  value: string;
+} & Position;
+
 export type Token =
   | StringLiteralToken
   | KnotToken
@@ -45,7 +51,8 @@ export type Token =
   | ConditionToken
   | ChoiceToken
   | ActorLineToken
-  | ControlFlowToken;
+  | ControlFlowToken
+  | SymbolToken;
 
 export function tokenize(src: string): Token[] {
   let line = 0;
@@ -185,6 +192,15 @@ function tokenizeLine(code: string, line: number, tokens: Token[]) {
               });
               column += ident.length - 1;
               break;
+            } else {
+              tokens.push({
+                type: 'symbol',
+                value: symbol,
+                line,
+                column,
+              });
+              column += ident.length - 1;
+              break;
             }
           }
         }
@@ -247,7 +263,7 @@ function tryParseCondition(
 function tryParseIdentifier(
   code: string,
 ): {ident: string; length: number} | null {
-  const match = code.match(/^[a-z]+/);
+  const match = code.match(/^[a-zA-Z_]+/);
   if (match != null) {
     const ident = match[0];
     return {
