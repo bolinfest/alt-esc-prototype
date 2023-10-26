@@ -1,3 +1,8 @@
+import type {LiteralishValue} from './literalish';
+
+import {tryParseLiteralishValue} from './literalish';
+import nullthrows from 'nullthrows';
+
 type RootBlock = {
   type: 'ROOT';
 };
@@ -6,8 +11,8 @@ type StateBlock = {
   type: 'STATE';
 };
 
-type ObjectBlock = {
-  type: 'OBJECT';
+type ItemBlock = {
+  type: 'ITEM';
   id: string;
 };
 
@@ -17,43 +22,78 @@ type EventBlock = {
   /* event args? */
 };
 
+type ScriptLang = 'gd' | 'esc';
+
 type VerbBlock = {
   type: 'VERB';
   id: string;
+  lang: ScriptLang;
   /* verb args? */
   indent: string;
 };
 
-type ParseState = RootBlock | StateBlock | EventBlock | VerbBlock | ObjectBlock;
+type ParseState = RootBlock | StateBlock | EventBlock | VerbBlock | ItemBlock;
 
-const includeComments = false;
+type Property = {id: string; value: LiteralishValue};
 
-export function parseRoomScriptSource(src: string, roomName: string): string {
-  const out: string[] = [];
+type Room = {
+  name: string;
+  properties: Property[];
+  items: Item[];
+};
+
+type Item = {
+  name: string;
+  properties: Property[];
+  verbs: Verb[];
+};
+
+type Verb = {
+  name: string;
+  lang: ScriptLang;
+  lines: string[];
+};
+
+/**
+ * This should generate multiple files because each subclass needs its own
+ * .gd file and each event that cannot be expressed in ESC also needs its own
+ * .gd file as a subclass of `ESCEvent`.
+ */
+export function parseRoomScriptSource(src: string, roomName: string): Room {
+  const roomProperties: Property[] = [];
   const state: ParseState[] = [{type: 'ROOT'}];
+  const items: Item[] = [];
+  const room = {
+    name: roomName,
+    properties: roomProperties,
+    items,
+  };
+
+  let currentItem: Item | null = null;
+  let currentVerb: Verb | null = null;
 
   for (const line of src.split('\n')) {
     if (isComment(line)) {
-      if (includeComments) {
-        out.push(line + '\n');
-      }
       continue;
     }
 
     const currentState = state.slice(-1)[0];
     switch (currentState.type) {
       case 'ROOT': {
-        const objectBlockBegin = tryParseObjectBlockBegin(line);
-        if (objectBlockBegin != null) {
-          state.push(objectBlockBegin);
-          out.push(`\nclass ESCObject(${objectBlockBegin.id}):\n`);
+        const itemBlockBegin = tryParseItemBlockBegin(line);
+        if (itemBlockBegin != null) {
+          state.push(itemBlockBegin);
+          currentItem = {
+            name: itemBlockBegin.id,
+            properties: [],
+            verbs: [],
+          };
           break;
         }
 
         const stateBlockBegin = tryParseStateBlockBegin(line);
         if (stateBlockBegin != null) {
           state.push(stateBlockBegin);
-          out.push(`# <state variables here>\n`);
           break;
         }
 
@@ -67,35 +107,47 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
 
         const prop = tryParseProperty(line);
         if (prop != null) {
-          out.push(`var ${prop.id} = ${prop.value}\n`);
+          roomProperties.push(prop);
           break;
         }
 
         break;
       }
-      case 'OBJECT': {
+      case 'ITEM': {
+        const item = nullthrows(currentItem);
         if (isCloseTopLevelBlock(line)) {
           state.pop();
+          items.push(item);
+          currentItem = null;
           break;
         }
 
         const prop = tryParseProperty(line);
         if (prop != null) {
-          out.push(`  ${prop.id} = ${prop.value}\n`);
+          item.properties.push(prop);
           break;
         }
 
         const verbBlockBegin = tryParseVerbBlockBegin(line);
         if (verbBlockBegin != null) {
           state.push(verbBlockBegin);
-          out.push(`  func ${verbBlockBegin.id}():\n`);
+          currentVerb = {
+            name: verbBlockBegin.id,
+            lang: verbBlockBegin.lang,
+            lines: [],
+          };
           break;
         }
         break;
       }
       case 'VERB': {
+        const verb = nullthrows(currentVerb);
         if (isCloseBlock(line, currentState.indent)) {
+          nullthrows(currentItem).verbs.push(verb);
+          currentVerb = null;
           state.pop();
+        } else {
+          verb.lines.push(line.slice(currentState.indent.length));
         }
 
         break;
@@ -105,7 +157,7 @@ export function parseRoomScriptSource(src: string, roomName: string): string {
     }
   }
 
-  return out.join('');
+  return room;
 }
 
 function isComment(line: string): boolean {
@@ -121,41 +173,42 @@ function tryParseStateBlockBegin(line: string): StateBlock | null {
   }
 }
 
-function tryParseObjectBlockBegin(line: string): ObjectBlock | null {
-  const match = line.match(/^\s*object\s+([\w-]+)\s*\{\s*$/);
+function tryParseItemBlockBegin(line: string): ItemBlock | null {
+  const match = line.match(/^\s*item\s+([\w-]+)\s*\{\s*$/);
   if (match != null) {
-    return {type: 'OBJECT', id: match[1]};
+    return {type: 'ITEM', id: match[1]};
   } else {
     return null;
   }
 }
 
 function tryParseVerbBlockBegin(line: string): VerbBlock | null {
-  const match = line.match(/^(\s*)([A-Z_]+)\(\)\s*\{\s*$/);
+  const match = line.match(/^(\s*)([A-Z_]+)\(\)\s*(%?)\{\s*$/);
   if (match != null) {
-    return {type: 'VERB', id: match[2], indent: match[1]};
+    return {
+      type: 'VERB',
+      id: match[2],
+      lang: match[2] === '%' ? 'esc' : 'gd',
+      indent: match[1],
+    };
   } else {
     return null;
   }
 }
 
-function tryParseProperty(line: string): {id: string; value: string} | null {
-  const match = line.match(/^(\s*)([\w-]+)\s*=(.+)$/);
-  if (match != null) {
-    let value = null;
-    try {
-      value = JSON.parse(match[3]);
-    } catch (e) {
-      return null;
-    }
-
-    return {
-      id: match[2],
-      value: JSON.stringify(value),
-    };
+function tryParseProperty(line: string): Property | null {
+  const match = line.match(/^(\s*)([\w-]+)\s*=\s*(.+)\s*$/);
+  if (match == null) {
+    return null;
   }
 
-  return null;
+  const value = tryParseLiteralishValue(match[3]);
+  return value != null
+    ? {
+        id: match[2],
+        value,
+      }
+    : null;
 }
 
 function isCloseTopLevelBlock(line: string): boolean {
