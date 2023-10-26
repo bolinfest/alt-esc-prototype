@@ -20,10 +20,20 @@ export type LiteralishValue =
       type: 'null';
     };
 
-export function renderLiteralishValue(literalish: LiteralishValue): string {
+export type LiteralishValueOptions = {omitTranslationWrapper?: boolean};
+
+export function renderLiteralishValue(
+  literalish: LiteralishValue,
+  options: LiteralishValueOptions = {},
+): string {
   switch (literalish.type) {
     case 'translation':
-      return `$T(${JSON.stringify(literalish.value)})`;
+      const literal = JSON.stringify(literalish.value);
+      if (options.omitTranslationWrapper) {
+        return literal;
+      } else {
+        return `$T(${literal})`;
+      }
     case 'null':
       return 'null';
     case 'string':

@@ -11,6 +11,9 @@
 # production
 /build
 
+# `yarn build-daemon` and then `node dist/daemon/main.js`
+/dist/
+
 # misc
 .DS_Store
 .env.local

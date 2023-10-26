@@ -10,6 +10,7 @@ import {parseRoomScriptSource} from './parser/parser';
 import {renderLiteralishValue} from './parser/literalish';
 import {parseYackFile} from './yack/parser';
 import {generateGDScript} from './yack/codegen';
+import {generateFilesForRoom} from './parser/codegen';
 
 const parseInputAsYackFile = false;
 
@@ -88,52 +89,15 @@ function RealApp() {
           out.push('# go in the same folder as the .tscn for the room.');
           out.push('');
 
-          out.push(`# File: ${room.name}.gd`);
-          for (const prop of room.properties) {
-            out.push('extends ESCRoom');
-            out.push('');
-            out.push(`var ${prop.id} = ${renderLiteralishValue(prop.value)}`);
-            out.push('');
+          const files = generateFilesForRoom(room, {
+            omitTranslationWrapper: false,
+          });
+          for (const [filename, gdscript] of files.entries()) {
+            out.push(`# File: ${filename}`);
+            out.push(gdscript);
           }
-          out.push('');
 
-          for (const item of room.items) {
-            out.push(`# File: ${item.name}.gd`);
-            out.push('extends ESCItem');
-            out.push('');
-
-            for (const prop of item.properties) {
-              out.push(`var ${prop.id} = ${renderLiteralishValue(prop.value)}`);
-              out.push('');
-            }
-
-            const {verbs} = item;
-            const eventMapEntries = [];
-            if (verbs.length > 0) {
-              out.push('func generate_events() -> Dictionary:');
-              for (const verb of verbs) {
-                const esc_verb_name = verb.name.toLowerCase();
-                const var_name = `event_${esc_verb_name}`;
-                out.push(
-                  `    var ${var_name} = escoria.esc_compiler.compile([`,
-                );
-                out.push(`        ":${esc_verb_name}",`);
-                for (const line of verb.lines) {
-                  out.push(`        ${JSON.stringify(line)},`);
-                }
-                out.push(`    ]).events["${esc_verb_name}"]`);
-                eventMapEntries.push(
-                  `        "${esc_verb_name}": ${var_name},`,
-                );
-              }
-
-              out.push('    return {');
-              out.push(...eventMapEntries);
-              out.push('    }');
-            }
-            out.push('');
-          }
-          gdscript = out.join('\n').trimEnd();
+          gdscript = out.join('\n');
         }
         editor.getModel()?.setValue(gdscript);
       };

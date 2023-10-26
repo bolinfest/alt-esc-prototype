@@ -36,19 +36,19 @@ type ParseState = RootBlock | StateBlock | EventBlock | VerbBlock | ItemBlock;
 
 type Property = {id: string; value: LiteralishValue};
 
-type Room = {
+export type Room = {
   name: string;
   properties: Property[];
   items: Item[];
 };
 
-type Item = {
+export type Item = {
   name: string;
   properties: Property[];
   verbs: Verb[];
 };
 
-type Verb = {
+export type Verb = {
   name: string;
   lang: ScriptLang;
   lines: string[];

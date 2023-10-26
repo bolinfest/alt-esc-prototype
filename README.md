@@ -15,6 +15,19 @@ using Godot as the underlying engine, this prototype uses
 as the target language, so it also supports embedding directly,
 as appropriate.
 
+## CLI build daemon
+
+Run `yarn` once to install the dependencies and then `yarn build-daemon` to build the CLI.
+
+To run the daemon:
+
+```
+yarn run-daemon <path-to-folder-of-room-files>
+```
+
+Leave this running as you edit `.room` files and it will re-generate the `.gd` files, as necessary.
+You can watch the logs to see which files have been updated.
+
 ## .room files
 
 ### item declarations
