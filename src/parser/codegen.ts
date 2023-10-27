@@ -1,5 +1,5 @@
 import type {Item, Verb, Room} from './parser';
-import type {LiteralishValueOptions} from './literalish';
+import type {LiteralishValue, LiteralishValueOptions} from './literalish';
 import {renderLiteralishValue} from './literalish';
 
 export function generateFilesForRoom(
@@ -40,12 +40,33 @@ function generateGDScriptForItem(
   const out: string[] = [];
 
   out.push();
-  out.push('extends ESCItem');
-  out.push('');
+  out.push('extends ESCItem\n\n');
 
+  const overrideProperties: Array<[ItemPropertyMapping, LiteralishValue]> = [];
+  const customProperties: Array<[ItemPropertyMapping, LiteralishValue]> = [];
   for (const prop of item.properties) {
-    out.push(`var ${prop.id} = ${renderLiteralishValue(prop.value, options)}`);
-    out.push('');
+    const mapping = mapItemProperty(prop.id);
+    if (mapping.override) {
+      overrideProperties.push([mapping, prop.value]);
+    } else {
+      customProperties.push([mapping, prop.value]);
+    }
+  }
+
+  for (const [mapping, value] of customProperties) {
+    out.push(
+      `var ${mapping.name} = ${renderLiteralishValue(value, options)}\n`,
+    );
+  }
+
+  if (overrideProperties.length > 0) {
+    out.push('func _init():');
+    for (const [mapping, value] of overrideProperties) {
+      out.push(
+        `    self.${mapping.name} = ${renderLiteralishValue(value, options)}`,
+      );
+    }
+    out.push('\n');
   }
 
   const {verbs} = item;
@@ -80,5 +101,30 @@ function rewriteVerbName(verb: Verb): string {
       return 'look';
     default:
       return normalizedName;
+  }
+}
+
+type ItemPropertyMapping = {
+  /**
+   * Name of the property to use in GDScript. May differ from the name used
+   * in the .room file.
+   */
+  name: string;
+
+  /**
+   * true if the field is defined in a parent class and therefore the value
+   * must be overridden in the constructor.
+   */
+  override: boolean;
+};
+
+function mapItemProperty(propertyName: string): ItemPropertyMapping {
+  switch (propertyName) {
+    case 'tooltip':
+      return {name: 'tooltip_name', override: true};
+    case 'is_exit':
+      return {name: 'is_exit', override: true};
+    default:
+      return {name: propertyName, override: false};
   }
 }

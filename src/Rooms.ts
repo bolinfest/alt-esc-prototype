@@ -14,12 +14,12 @@ event enter() {
 
 # Identifier after \`item\` must match Node id in .tscn file.
 item door {
-  name = $T("Door")
+  tooltip = $T("Door")
   is_exit = true
 }
 
 item meteor_mess {
-  name = $T("Meteor Mess")
+  tooltip = $T("Meteor Mess")
 
   LOOK_AT() %{
     say player "It's out of order." [!mansion_has_power]
