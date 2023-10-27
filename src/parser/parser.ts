@@ -143,6 +143,7 @@ export function parseRoomScriptSource(src: string, roomName: string): Room {
       case 'VERB': {
         const verb = nullthrows(currentVerb);
         if (isCloseBlock(line, currentState.indent)) {
+          verb.lines = unindentLines(verb.lines);
           nullthrows(currentItem).verbs.push(verb);
           currentVerb = null;
           state.pop();
@@ -218,4 +219,25 @@ function isCloseTopLevelBlock(line: string): boolean {
 function isCloseBlock(line: string, indent: string): boolean {
   const match = line.match(/^(\s*)\}\s*$/);
   return match != null && match[1] === indent;
+}
+
+function unindentLines(lines: ReadonlyArray<string>): Array<string> {
+  if (lines.length === 0) {
+    return [];
+  }
+
+  // Find the minimum indent.
+  let minIndent = Infinity;
+  for (const line of lines) {
+    const match = line.match(/^(\s*)/);
+    if (match != null) {
+      minIndent = Math.min(minIndent, match[1].length);
+    }
+  }
+
+  if (minIndent === Infinity) {
+    throw Error('invariant violation');
+  }
+
+  return lines.map(line => line.slice(minIndent));
 }
