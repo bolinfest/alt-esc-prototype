@@ -27,8 +27,9 @@ item meteor_mess {
     say player "Ah, my old nemesis, Meteor Mess." [mansion_has_power, i/quarter]
   }
 
-  # This should get replaced with proper conditionals.
   USE() %{
+    # This should get rewritten in our custom scripting language
+    # to support C-style conditionals.
     > [mansion_has_power, i/quarter]
       say player "Game on!"
       stop

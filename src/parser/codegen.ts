@@ -1,4 +1,4 @@
-import type {Item, Room} from './parser';
+import type {Item, Verb, Room} from './parser';
 import type {LiteralishValueOptions} from './literalish';
 import {renderLiteralishValue} from './literalish';
 
@@ -53,7 +53,7 @@ function generateGDScriptForItem(
   if (verbs.length > 0) {
     out.push('func generate_events() -> Dictionary:');
     for (const verb of verbs) {
-      const esc_verb_name = verb.name.toLowerCase();
+      const esc_verb_name = rewriteVerbName(verb);
       const var_name = `event_${esc_verb_name}`;
       out.push(`    var ${var_name} = escoria.esc_compiler.compile([`);
       out.push(`        ":${esc_verb_name}",`);
@@ -70,4 +70,15 @@ function generateGDScriptForItem(
   }
 
   return out.join('\n') + '\n';
+}
+
+function rewriteVerbName(verb: Verb): string {
+  const normalizedName = verb.name.toLowerCase();
+  // Currently, we only have one special case.
+  switch (normalizedName) {
+    case 'look_at':
+      return 'look';
+    default:
+      return normalizedName;
+  }
 }
